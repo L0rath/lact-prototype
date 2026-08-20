@@ -329,6 +329,26 @@ body[data-state="empty"] .hint{display:none}
   opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none;text-align:center
 }
 .toast.on{opacity:1;transform:translateY(0)}
+/* --- Ajustes --- */
+.set{margin-bottom:22px}
+.set-row{display:flex;align-items:center;width:100%;background:none;border:0;padding:0 0 9px;
+  color:var(--text);font-family:inherit;text-align:left}
+.set-row.solo{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;cursor:pointer}
+.set-row.tog{cursor:pointer;padding-bottom:9px}
+.set-k{font-size:14px;font-weight:600;flex:1}
+.set-v{font-size:14px;font-weight:600;color:var(--muted)}
+.set-h{font-size:11.5px;color:var(--dim);line-height:1.45;margin-top:9px}
+.sw{width:44px;height:26px;border-radius:99px;background:var(--raised);
+  border:1px solid var(--line);position:relative;transition:background .18s;flex:none}
+.sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:99px;
+  background:var(--muted);transition:.18s}
+.sw.on{background:var(--sleep);border-color:var(--sleep)}
+.sw.on i{left:21px;background:#0B0F17}
+
+/* Atenuado nocturno: capa sobre el tema, no un tema distinto */
+body[data-dim="on"] .phone{filter:brightness(.68) saturate(.85)}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* --- En un móvil real ocupa toda la pantalla --- */
@@ -469,12 +489,47 @@ body[data-state="empty"] .hint{display:none}
 
   <!-- ================= PERFIL ================= -->
   <div class="screen" id="s-pf">
-    <h1>Martina</h1>
-    <p class="sub">Nacida el 7 de mayo de 2026</p>
-    <div class="metric"><div class="metric-top"><span class="metric-name">Idioma</span><span style="font-weight:600;font-size:14px">Español</span></div></div>
-    <div class="metric"><div class="metric-top"><span class="metric-name">Unidades</span><span style="font-weight:600;font-size:14px">kg · cm · °C</span></div></div>
-    <div class="metric"><div class="metric-top"><span class="metric-name">Tema</span><span style="font-weight:600;font-size:14px">Automático</span></div></div>
-    <div class="metric"><div class="metric-top"><span class="metric-name">Exportar informe</span><span style="font-weight:600;font-size:14px">PDF 7 días ›</span></div></div>
+    <h1 id="pfName">Martina</h1>
+    <p class="sub" id="pfSub">—</p>
+
+    <div class="set">
+      <div class="set-row"><span class="set-k">Tema</span></div>
+      <div class="seg" id="segTema">
+        <button data-v="auto" class="on">Automático</button>
+        <button data-v="dia">Claro</button>
+        <button data-v="noche">Oscuro</button>
+      </div>
+      <p class="set-h" id="temaH"></p>
+    </div>
+
+    <div class="set">
+      <button class="set-row tog" id="togDim">
+        <span class="set-k">Atenuar de noche</span>
+        <span class="sw" id="swDim"><i></i></span>
+      </button>
+      <p class="set-h">Reduce el brillo entre las 22:00 y las 07:00. Si lo desactivas de madrugada, vuelve solo por la mañana.</p>
+    </div>
+
+    <div class="set">
+      <div class="set-row"><span class="set-k">Idioma</span></div>
+      <div class="seg" id="segIdioma">
+        <button data-v="es" class="on">Español</button>
+        <button data-v="en">English</button>
+      </div>
+    </div>
+
+    <div class="set">
+      <div class="set-row"><span class="set-k">Unidades</span></div>
+      <div class="seg" id="segUnid">
+        <button data-v="si" class="on">ml · kg · °C</button>
+        <button data-v="imp">oz · lb · °F</button>
+      </div>
+      <p class="set-h">Independiente del idioma. Los datos se guardan siempre en el sistema internacional.</p>
+    </div>
+
+    <button class="set-row solo" onclick="toast('Generando informe de 7 días…')">
+      <span class="set-k">Exportar informe</span><span class="set-v">PDF 7 días ›</span>
+    </button>
   </div>
 
   <!-- Hoja inferior -->
@@ -780,6 +835,10 @@ function pintaHoy(){
   document.getElementById('nNight').textContent=hm(nocheDe(1));
   document.getElementById('nFeed').textContent=today.filter(e=>e.k==='feed').length;
   document.getElementById('nDiaper').textContent=today.filter(e=>e.k==='diaper').length;
+  const pn=document.getElementById('pfName'),ps=document.getElementById('pfSub');
+  if(pn)pn.textContent=perfil.nombre||'Martina';
+  if(ps)ps.textContent=(perfil.sexo==='Niño'?'Nacido':'Nacida')+' el 7 de mayo de 2026 · '+
+    textoEdad(NACIM,HOY,{sexo:perfil.sexo});
 }
 pintaHoy();
 function renderTl(){
@@ -1085,12 +1144,55 @@ function toast(msg){
 }
 function confirm_(){closeSheet();toast('Guardado · toca Historial para corregir')}
 
-// --- Tema ---
-const setTheme=v=>{document.body.dataset.theme=v;
-  document.getElementById('tNight').classList.toggle('on',v==='night');
-  document.getElementById('tDay').classList.toggle('on',v==='day')};
-document.getElementById('tNight').onclick=()=>setTheme('night');
-document.getElementById('tDay').onclick=()=>setTheme('day');
+// ================= TEMA Y ATENUADO =================
+// Dos ajustes independientes: el tema (claro/oscuro) y el atenuado nocturno.
+// Alguien puede llevar el móvil en oscuro a mediodía sin querer el brillo al mínimo.
+let tema='auto', atenuar=true, dimOff=null;   // dimOff: anulación válida hasta la mañana
+
+const horaNoche=()=>{const h=new Date().getHours();return h>=22||h<7};
+function aplicaTema(){
+  let t=tema;
+  if(t==='auto'){
+    const oscuroSO=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches;
+    t=(oscuroSO||horaNoche())?'noche':'dia';
+  }
+  document.body.dataset.theme=t==='noche'?'night':'day';
+  // La anulación manual caduca sola: nadie que la desactive medio dormido
+  // quiere cambiar una preferencia permanente.
+  if(dimOff!==null&&!horaNoche())dimOff=null;
+  document.body.dataset.dim=(atenuar&&horaNoche()&&dimOff===null)?'on':'';
+  const h=document.getElementById('temaH');
+  if(h)h.textContent=tema==='auto'
+    ?'Sigue al sistema y cambia a oscuro por la noche.'
+    :'Fijado manualmente. Ignora el ajuste del sistema.';
+  document.getElementById('tNight').classList.toggle('on',document.body.dataset.theme==='night');
+  document.getElementById('tDay').classList.toggle('on',document.body.dataset.theme==='day');
+}
+function segmento(id,onPick){
+  const b=document.getElementById(id);if(!b)return;
+  b.querySelectorAll('button').forEach(x=>x.onclick=()=>{
+    b.querySelectorAll('button').forEach(y=>y.classList.remove('on'));
+    x.classList.add('on');onPick(x.dataset.v);
+  });
+}
+segmento('segTema',v=>{tema=v;aplicaTema()});
+segmento('segIdioma',v=>toast(v==='es'?'Idioma: Español':'Language: English'));
+segmento('segUnid',v=>toast(v==='si'?'ml · kg · °C':'oz · lb · °F'));
+
+document.getElementById('togDim').onclick=()=>{
+  if(atenuar&&horaNoche()&&dimOff===null){dimOff=Date.now();toast('Atenuado desactivado hasta mañana')}
+  else{atenuar=!atenuar;dimOff=null;toast(atenuar?'Atenuado activado':'Atenuado desactivado')}
+  document.getElementById('swDim').classList.toggle('on',
+    atenuar&&(!horaNoche()||dimOff===null));
+  aplicaTema();
+};
+document.getElementById('swDim').classList.add('on');
+aplicaTema();
+setInterval(aplicaTema,60000);   // reevalúa el horario
+
+// Los botones de la barra superior son solo para probar
+document.getElementById('tNight').onclick=()=>{tema='noche';aplicaTema()};
+document.getElementById('tDay').onclick=()=>{tema='dia';aplicaTema()};
 
 // ================= ONBOARDING =================
 // Sin cuenta, sin correo, sin permisos, sin tutorial. Tres pasos.

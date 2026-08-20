@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ritmo">
+<meta name="theme-color" content="#0E1116">
+<title>Prototipo — Seguimiento infantil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sleep:#7B8CFF;
+  --feed:#F2A65A;
+  --diaper:#3FBFA0;
+  --danger:#F2646A;
+  --r:14px;
+  --pad:20px;
+}
+/* NOCHE (por defecto) */
+body[data-theme="night"]{
+  --bg:#0E1116; --surface:#171C24; --raised:#212934; --line:#2A323E;
+  --text:#E8EDF5; --muted:#8A96A8; --dim:#5C6879;
+}
+/* DÍA */
+body[data-theme="day"]{
+  --bg:#F5F7FA; --surface:#FFFFFF; --raised:#EDF1F6; --line:#DDE3EB;
+  --text:#131A24; --muted:#65718ategy; --muted:#657182; --dim:#96A1B0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:#05070A; font-family:'Inter Tight',system-ui,sans-serif;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px 12px; gap:16px; color:#E8EDF5;
+}
+.chrome{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.chrome button{
+  background:#1B222C;color:#B9C4D2;border:1px solid #2C3440;border-radius:99px;
+  padding:7px 14px;font:500 12px 'Inter Tight';cursor:pointer;letter-spacing:.02em;
+}
+.chrome button.on{background:#E8EDF5;color:#0E1116;border-color:#E8EDF5}
+
+/* --- Marco --- */
+.phone{
+  width:min(390px,100%); height:min(800px,86vh); background:var(--bg);
+  border-radius:36px; overflow:hidden; position:relative;
+  display:flex; flex-direction:column; color:var(--text);
+  box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.07);
+  transition:background .3s;
+}
+.notch{height:26px;flex:none}
+
+.screen{flex:1;overflow-y:auto;padding:0 var(--pad) 12px;display:none}
+.screen.on{display:block}
+.screen::-webkit-scrollbar{display:none}
+
+h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+
+/* --- Banda de ritmo (elemento firma) --- */
+.rhythm{margin-bottom:22px}
+.rhythm-label{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);
+  letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px}
+.band{height:46px;border-radius:8px;background:var(--raised);position:relative;overflow:hidden;
+  touch-action:none;cursor:col-resize}
+.scrub{position:absolute;top:0;bottom:0;width:2px;background:var(--text);
+  opacity:0;transition:opacity .12s;pointer-events:none}
+.scrub.on{opacity:1}
+#bandRead{font-variant-numeric:tabular-nums}
+.rhythm-label .live{color:var(--text);letter-spacing:.02em}
+.blk{position:absolute;top:0;bottom:0;border-radius:3px}
+.blk.s{background:var(--sleep)}
+.blk.f{background:var(--feed)}
+.blk.d{background:var(--diaper)}
+.now{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);border-radius:2px}
+.ticks{display:flex;justify-content:space-between;font-size:9.5px;color:var(--dim);margin-top:5px;
+  font-variant-numeric:tabular-nums}
+
+/* --- Héroe --- */
+.hero{margin-bottom:20px}
+.hero-eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.hero-big{font:800 48px/1 'Bricolage Grotesque';letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.hero-big small{font-size:24px;font-weight:600;letter-spacing:-.01em}
+.hero-note{color:var(--muted);font-size:13.5px;margin-top:8px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:99px;margin-right:6px;vertical-align:1px}
+
+/* --- Resumen --- */
+.future{position:absolute;top:0;bottom:0;right:0;pointer-events:none;
+  background:repeating-linear-gradient(45deg,transparent 0 4px,var(--bg) 4px 5px);opacity:.5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:22px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px 12px}
+.stat b{font:700 21px 'Bricolage Grotesque';display:block;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat span{font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+
+/* --- Acciones --- */
+.act-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.act{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 14px;text-align:left;color:var(--text);cursor:pointer;font-family:inherit;
+  transition:transform .09s;
+}
+.act:active{transform:scale(.97)}
+.act .ic{display:block;margin-bottom:9px;width:22px;height:22px;stroke-width:1.75}
+.act .nm{font-weight:600;font-size:14.5px;display:block}
+.act .hint{font-size:11.5px;color:var(--muted);margin-top:2px;display:block}
+/* Uno relleno = acción contextual primaria */
+.act.fill-sleep{background:var(--sleep);border-color:var(--sleep);color:#0B0F17;grid-column:1/-1}
+.act.fill-sleep .hint{color:rgba(11,15,23,.68)}
+.act.fill-feed{background:var(--feed);border-color:var(--feed);color:#1A1206;grid-column:1/-1}
+.act.fill-feed .hint{color:rgba(26,18,6,.68)}
+/* Los demás: tinte suave + icono en color propio */
+.act.tint-feed{background:color-mix(in srgb,var(--feed) 11%,var(--surface));
+  border-color:color-mix(in srgb,var(--feed) 30%,var(--line))}
+.act.tint-feed .ic{color:var(--feed)}
+.act.tint-diaper{background:color-mix(in srgb,var(--diaper) 8%,var(--surface));
+  border-color:color-mix(in srgb,var(--diaper) 24%,var(--line))}
+.act.tint-diaper .ic{color:var(--diaper)}
+.act.tint-sleep{background:color-mix(in srgb,var(--sleep) 11%,var(--surface));
+  border-color:color-mix(in srgb,var(--sleep) 30%,var(--line))}
+.act.tint-sleep .ic{color:var(--sleep)}
+
+/* --- Timeline --- */
+.tl-day{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+  margin:20px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+.filters{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
+.filters::-webkit-scrollbar{display:none}
+.filt{flex:none;background:var(--surface);border:1px solid var(--line);color:var(--muted);
+  border-radius:99px;padding:7px 13px;font:500 12.5px 'Inter Tight';cursor:pointer}
+.filt.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.dayc{border-bottom:1px solid var(--line);padding:6px 0 14px}
+.dayh{display:block;width:100%;background:none;border:0;color:var(--text);
+  text-align:left;cursor:pointer;font-family:inherit;padding:12px 0 4px}
+.dayh:active{opacity:.55}
+.dh-row{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.dh-date{font-weight:600;font-size:14.5px}
+.dh-age{font-size:11px;color:var(--dim);letter-spacing:.03em}
+.dh-go{margin-left:auto;color:var(--dim);font-size:15px;
+  transition:transform .2s;display:inline-block}
+.dayc.open .dh-go{transform:rotate(90deg)}
+.miniband{display:block;height:26px;border-radius:6px;background:var(--raised);
+  position:relative;overflow:hidden}
+.dsum{display:block;font-size:11.5px;color:var(--muted);margin-top:7px;
+  font-variant-numeric:tabular-nums}
+.dayev{display:none;margin-top:6px}
+.dayc.open .dayev{display:block}
+.addday{width:100%;background:none;border:1px dashed var(--line);color:var(--muted);
+  border-radius:9px;padding:10px;font:500 12.5px 'Inter Tight';cursor:pointer;margin-top:8px}
+.ev.hide{display:none}
+.blk.dim{opacity:.13}
+.ev{display:flex;gap:13px;padding:11px 0;align-items:flex-start;width:100%;
+  background:none;border:0;text-align:left;cursor:pointer;font-family:inherit;color:var(--text)}
+.ev:active{opacity:.55}
+.ev-go{color:var(--dim);font-size:18px;align-self:center;flex:none}
+.link.danger{color:var(--danger);margin-top:6px;padding-top:15px;
+  border-top:1px solid var(--line)}
+.ev-time{font-size:12.5px;color:var(--muted);width:44px;flex:none;padding-top:2px;
+  font-variant-numeric:tabular-nums}
+.ev-bar{width:3px;border-radius:2px;align-self:stretch;flex:none}
+.ev-body{flex:1;display:block}
+.ev-title,.ev-meta{display:block}
+.ev-title{font-weight:600;font-size:14.5px}
+.ev-meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+.tag{display:inline-block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--line);color:var(--dim);border-radius:5px;padding:1.5px 5px;margin-left:6px}
+
+/* --- Estadísticas --- */
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:11px}
+.metric-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px}
+.metric-name{font-size:13px;color:var(--muted)}
+.metric-val{font:700 25px 'Bricolage Grotesque';letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.spark{display:flex;align-items:flex-end;gap:4px;height:44px}
+.spark i{flex:1;border-radius:3px 3px 0 0;opacity:.85}
+.seg{display:flex;gap:6px;margin-bottom:18px}
+.seg button{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--muted);
+  border-radius:9px;padding:8px;font:500 12.5px 'Inter Tight';cursor:pointer}
+.seg button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* --- Tabs --- */
+.tabs{display:flex;border-top:1px solid var(--line);background:var(--surface);flex:none;
+  padding:8px 0 22px}
+.tab{flex:1;background:none;border:0;color:var(--dim);font:500 10.5px 'Inter Tight';
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px}
+.tab .ti{width:21px;height:21px;stroke-width:1.75}
+.tab.on .ti{stroke-width:2.25}
+svg.ic,svg.ti{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--text)}
+
+/* --- Hoja inferior --- */
+/* --- Onboarding --- */
+.onb{position:absolute;inset:0;background:var(--bg);z-index:20;padding:38px 22px 30px;
+  display:none;flex-direction:column}
+.onb.on{display:flex}
+.onb-dots{display:flex;gap:6px;margin-bottom:34px}
+.onb-dots i{height:3px;flex:1;border-radius:2px;background:var(--line)}
+.onb-dots i.on{background:var(--text)}
+.onb-body{flex:1}
+.onb-q{font:800 26px/1.2 'Bricolage Grotesque';letter-spacing:-.025em;margin-bottom:8px}
+.onb-h{font-size:13.5px;color:var(--muted);margin-bottom:26px;line-height:1.45}
+.onb-in{width:100%;background:none;border:0;border-bottom:2px solid var(--line);
+  color:var(--text);font:600 24px 'Bricolage Grotesque';padding:8px 0 12px;margin-bottom:28px}
+.onb-in:focus{outline:none;border-color:var(--sleep)}
+.onb-in::placeholder{color:var(--dim);font-weight:400}
+.onb-foot{display:flex;gap:10px;align-items:center}
+.onb-back{background:none;border:0;color:var(--muted);font:500 13.5px 'Inter Tight';
+  padding:16px 8px;cursor:pointer}
+.onb-skip{display:block;width:100%;background:none;border:0;color:var(--dim);
+  font:500 12.5px 'Inter Tight';padding:14px;cursor:pointer;margin-top:4px}
+.dmy{display:flex;align-items:center;gap:8px}
+.dmy input{flex:1;width:0;background:var(--raised);border:1px solid var(--line);
+  border-radius:10px;padding:14px 8px;color:var(--text);text-align:center;
+  font:700 19px 'Bricolage Grotesque';font-variant-numeric:tabular-nums}
+.dmy input:focus{outline:none;border-color:var(--sleep)}
+.dmy input::placeholder{color:var(--dim);font-weight:400;font-size:15px}
+.dmy span{color:var(--dim);font-size:17px}
+.dmy-out{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:17px}
+.dmy-out b{color:var(--text);font-weight:700}
+.dmy-out.err{color:var(--danger)}
+.premie{margin-top:6px}
+.premie-t{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);
+  cursor:pointer;padding:12px 0}
+.premie-t input{width:18px;height:18px;accent-color:var(--sleep)}
+
+/* --- Estado vacío --- */
+.empty{display:none;padding:6px 0 26px}
+.empty p{font:700 19px 'Bricolage Grotesque';letter-spacing:-.02em}
+.empty .empty-sub{font:400 13.5px 'Inter Tight';color:var(--muted);
+  margin-top:7px;line-height:1.45}
+body[data-state="empty"] .rhythm,
+body[data-state="empty"] .hero,
+body[data-state="empty"] .stats{display:none}
+body[data-state="empty"] .empty{display:block}
+/* --- Evento en curso (ended_at = null) --- */
+.live-card{display:flex;align-items:center;gap:12px;border-radius:var(--r);padding:14px 15px;
+  margin-bottom:18px;border:1px solid}
+.live-card .lc-ic{width:20px;height:20px;flex:none;stroke-width:1.9}
+.live-card .lc-txt{flex:1;line-height:1.25}
+.live-card .lc-k{font-size:11px;letter-spacing:.09em;text-transform:uppercase;opacity:.7}
+.live-card .lc-t{font:800 20px 'Bricolage Grotesque';letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;margin-top:2px}
+.live-card .lc-btn{flex:none;border:0;border-radius:9px;padding:11px 15px;
+  font:700 13px 'Inter Tight';cursor:pointer}
+.lc-sleep{background:color-mix(in srgb,var(--sleep) 13%,var(--surface));border-color:var(--sleep);color:var(--text)}
+.lc-sleep .lc-ic{color:var(--sleep)}
+.lc-sleep .lc-btn{background:var(--sleep);color:#0B0F17}
+.lc-feed{background:color-mix(in srgb,var(--feed) 13%,var(--surface));border-color:var(--feed);color:var(--text)}
+.lc-feed .lc-ic{color:var(--feed)}
+.lc-feed .lc-btn{background:var(--feed);color:#1A1206}
+/* La tarjeta en curso sustituye al titular: no puede haber dos versiones del estado */
+body[data-open="sleep"] .hero,
+body[data-open="feed"] .hero{display:none}
+body[data-open="sleep"] .act.fill-sleep{display:none}
+body[data-open="feed"] .act.tint-feed{display:none}
+/* En estado vacío no hay "hace X": no hay nada registrado */
+body[data-state="empty"] .hint{display:none}
+.cta-alt{width:100%;background:none;border:1px solid var(--line);color:var(--text);
+  border-radius:12px;padding:14px;font:600 14px 'Inter Tight';cursor:pointer;margin-top:9px}
+.veil{position:absolute;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;
+  transition:opacity .22s;z-index:5}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;background:var(--surface);z-index:6;
+  border-radius:22px 22px 0 0;padding:8px var(--pad) 28px;
+  transform:translateY(102%);transition:transform .27s cubic-bezier(.3,1,.4,1);
+  border-top:1px solid var(--line);
+}
+.sheet.on{transform:translateY(0)}
+.sheet-head{touch-action:none;cursor:grab;padding-bottom:2px}
+.sheet-head:active{cursor:grabbing}
+.grab{width:36px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 16px}
+.sheet h2{font:700 20px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:3px}
+.sheet .sh-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px}
+.field{margin-bottom:16px}
+.field-label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{background:var(--raised);border:1px solid var(--line);color:var(--text);border-radius:9px;
+  padding:10px 14px;font:500 13.5px 'Inter Tight';cursor:pointer;flex:1;text-align:center;
+  font-variant-numeric:tabular-nums}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.cta{width:100%;background:var(--feed);color:#1A1206;border:0;border-radius:12px;
+  padding:16px;font:700 15.5px 'Inter Tight';cursor:pointer;margin-top:4px}
+.cta.sleep{background:var(--sleep);color:#0B0F17}
+.link{width:100%;background:none;border:0;color:var(--muted);font:500 12.5px 'Inter Tight';
+  padding:13px;cursor:pointer}
+
+/* --- Aviso de temporizador olvidado --- */
+.repair{
+  background:var(--surface);border:1px solid var(--danger);border-radius:var(--r);
+  padding:15px;margin-bottom:20px
+}
+.repair h3{font-size:14.5px;font-weight:700;margin-bottom:5px}
+.repair p{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:13px}
+.repair-btns{display:flex;gap:8px}
+.repair-btns button{flex:1;border-radius:9px;padding:11px;font:600 12.5px 'Inter Tight';cursor:pointer;
+  background:var(--raised);border:1px solid var(--line);color:var(--text)}
+.repair-btns button.acc{background:var(--danger);border-color:var(--danger);color:#1A0608}
+.sheet.expanded{max-height:88%;overflow-y:auto}
+.sheet.expanded::-webkit-scrollbar{display:none}
+.note-input{width:100%;background:var(--raised);border:1px solid var(--line);border-radius:10px;
+  padding:12px;color:var(--text);font:400 13.5px 'Inter Tight';resize:none;min-height:62px}
+.note-input::placeholder{color:var(--dim)}
+.chips.wrap .chip{flex:0 0 auto;min-width:78px}
+.counter{display:flex;align-items:center;gap:10px}
+.counter .step{flex:0 0 54px}
+.counter b{font:800 24px 'Bricolage Grotesque';flex:1;text-align:center;font-variant-numeric:tabular-nums}
+.chip.t{display:flex;flex-direction:column;gap:2px;padding:9px 4px;line-height:1.1}
+.chip.t b{font:700 14.5px 'Inter Tight';font-variant-numeric:tabular-nums}
+.chip.t span{font-size:9px;opacity:.6;white-space:nowrap;letter-spacing:.01em}
+.tuner{display:flex;align-items:center;gap:7px}
+.step{background:var(--raised);border:1px solid var(--line);color:var(--text);border-radius:9px;
+  padding:12px 0;flex:1;font:600 13px 'Inter Tight';cursor:pointer;font-variant-numeric:tabular-nums}
+.step:active{background:var(--text);color:var(--bg)}
+.tuner-val{font:800 26px 'Bricolage Grotesque';letter-spacing:-.03em;flex:1.4;text-align:center;
+  font-variant-numeric:tabular-nums}
+.tuner-dur{font-size:12.5px;color:var(--muted);margin-top:11px;text-align:center}
+.tuner-dur b{color:var(--text);font-weight:700}
+.repair-idk{width:100%;background:none;border:0;color:var(--muted);
+  font:500 12.5px 'Inter Tight';padding:12px 0 2px;cursor:pointer;text-decoration:underline;
+  text-underline-offset:3px}
+.toast{
+  position:absolute;left:20px;right:20px;bottom:96px;background:var(--text);color:var(--bg);
+  border-radius:11px;padding:13px 16px;font:600 13.5px 'Inter Tight';z-index:8;
+  opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none;text-align:center
+}
+.toast.on{opacity:1;transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* --- En un móvil real ocupa toda la pantalla --- */
+.devtoggle{display:none}
+@media (max-width:560px){
+  body{padding:0;gap:0;height:100dvh;display:block}
+  .phone{width:100%;height:100dvh;border-radius:0;box-shadow:none}
+  .notch{height:env(safe-area-inset-top,20px)}
+  .tabs{padding-bottom:calc(14px + env(safe-area-inset-bottom,8px))}
+  .chrome{position:fixed;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom,8px));
+    z-index:30;background:#11161E;border:1px solid #2C3440;border-radius:14px;
+    padding:10px;display:none;box-shadow:0 12px 34px rgba(0,0,0,.5)}
+  .chrome.on{display:flex}
+  .devtoggle{display:block;position:fixed;right:12px;
+    bottom:calc(78px + env(safe-area-inset-bottom,8px));z-index:31;
+    width:34px;height:34px;border-radius:99px;background:#1B222C;color:#8A96A8;
+    border:1px solid #2C3440;font-size:15px;cursor:pointer;opacity:.55}
+}
+</style>
+</head>
+<body data-theme="night">
+
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sueño: luna creciente (Lucide) -->
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6.36 6.36 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <!-- Despertar: sol (Lucide) -->
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></symbol>
+  <!-- Pecho: gota de leche (Lucide droplet) -->
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7Z"/></symbol>
+  <!-- Biberón: dibujado a medida -->
+  <symbol id="i-bottle" viewBox="0 0 24 24"><path d="M10.5 2h3v2h-3zM9.5 4h5v2.5h-5z"/><path d="M8 6.5h8V19a2.5 2.5 0 0 1-2.5 2.5h-3A2.5 2.5 0 0 1 8 19z"/><path d="M11 10h5M11 13h5"/></symbol>
+  <!-- Pañal: dibujado a medida -->
+  <symbol id="i-diaper" viewBox="0 0 24 24"><path d="M3 6h18v4.5c0 5.2-4 9.5-9 9.5s-9-4.3-9-9.5z"/><path d="M3 9.5h18"/><path d="M9.5 20c.5-2.5 1.2-4 2.5-4s2 1.5 2.5 4"/></symbol>
+  <!-- Hoy: casa (Lucide) -->
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-7v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <!-- Historial: lista (Lucide) -->
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <!-- Evolución: barras (Lucide) -->
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M7 20v-8M12 20V5M17 20v-5"/></symbol>
+  <!-- Perfil: cara de bebé, dibujada a medida -->
+  <symbol id="i-baby" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M9.5 11.5h.01M14.5 11.5h.01M9.5 16a4 4 0 0 0 5 0M12 5c1.2 0 2 .8 2 1.8"/></symbol>
+</svg>
+
+<div class="chrome">
+  <button id="tNight" class="on">Noche</button>
+  <button id="tDay">Día</button>
+  <button id="tRepair">Simular temporizador olvidado</button>
+  <button id="tOnb">Onboarding</button>
+  <button id="tEmpty">Estado vacío</button>
+</div>
+
+<button class="devtoggle" onclick="document.querySelector('.chrome').classList.toggle('on')">⚙</button>
+
+<div class="phone">
+  <div class="notch"></div>
+
+  <!-- ================= HOY ================= -->
+  <div class="screen on" id="s-hoy">
+    <h1 id="cName">Martina</h1>
+    <p class="sub" id="heroSub">—</p>
+
+    <div id="liveSlot"></div>
+    <div id="repairSlot"></div>
+
+    <div class="empty" id="emptyMsg">
+      <p>Aún no hay nada registrado.</p>
+      <p class="empty-sub">Empieza por lo que acabe de pasar. El historial se construye solo.</p>
+    </div>
+
+    <!-- ELEMENTO FIRMA: banda de ritmo -->
+    <div class="rhythm">
+      <div class="rhythm-label"><span>Ritmo de hoy</span><span id="bandRead">Ahora 14:32</span></div>
+      <div class="band" id="band"></div>
+      <div class="ticks"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-eyebrow" id="heroEye">—</div>
+      <div class="hero-big" id="heroBig">—</div>
+      <div class="hero-note" id="heroNote"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="nNight">–</b><span>Anoche</span></div>
+      <div class="stat"><b id="nFeed">–</b><span>Tomas</span></div>
+      <div class="stat"><b id="nDiaper">–</b><span>Pañales</span></div>
+    </div>
+
+    <div class="actions">
+      <button class="act fill-sleep" onclick="openSheet('sleep')">
+        <svg class="ic"><use href="#i-moon"/></svg>
+        <span class="nm" id="aSleepN">Se ha dormido</span>
+        <span class="hint" id="aSleepH"></span>
+      </button>
+      <button class="act tint-feed" onclick="openSheet('feed')">
+        <svg class="ic"><use href="#i-drop"/></svg><span class="nm">Toma</span>
+        <span class="hint" id="aFeedH"></span>
+      </button>
+      <button class="act tint-diaper" onclick="openSheet('diaper')">
+        <svg class="ic"><use href="#i-diaper"/></svg><span class="nm">Pañal</span>
+        <span class="hint" id="aDiaperH"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= TIMELINE ================= -->
+  <div class="screen" id="s-tl">
+    <h1>Historial</h1>
+    <p class="sub">Cada franja es un día. Toca para abrirlo.</p>
+    <div class="filters" id="filters"></div>
+    <div id="tlBody"></div>
+  </div>
+
+  <!-- ================= ESTADÍSTICAS ================= -->
+  <div class="screen" id="s-st">
+    <h1>Evolución</h1>
+    <p class="sub">Datos registrados, sin interpretación</p>
+    <div class="seg">
+      <button>7 días</button><button class="on">14 días</button><button>30 días</button>
+    </div>
+
+    <div class="metric">
+      <div class="metric-top"><span class="metric-name">Sueño total al día</span><span class="metric-val">11h 20</span></div>
+      <div class="spark" id="sp1"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-top"><span class="metric-name">Tomas al día</span><span class="metric-val">7,2</span></div>
+      <div class="spark" id="sp2"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-top"><span class="metric-name">Pañales al día</span><span class="metric-val">5,8</span></div>
+      <div class="spark" id="sp3"></div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px">
+      Estas cifras describen lo que has registrado. No son una valoración del desarrollo de Martina.
+    </p>
+  </div>
+
+  <!-- ================= PERFIL ================= -->
+  <div class="screen" id="s-pf">
+    <h1>Martina</h1>
+    <p class="sub">Nacida el 7 de mayo de 2026</p>
+    <div class="metric"><div class="metric-top"><span class="metric-name">Idioma</span><span style="font-weight:600;font-size:14px">Español</span></div></div>
+    <div class="metric"><div class="metric-top"><span class="metric-name">Unidades</span><span style="font-weight:600;font-size:14px">kg · cm · °C</span></div></div>
+    <div class="metric"><div class="metric-top"><span class="metric-name">Tema</span><span style="font-weight:600;font-size:14px">Automático</span></div></div>
+    <div class="metric"><div class="metric-top"><span class="metric-name">Exportar informe</span><span style="font-weight:600;font-size:14px">PDF 7 días ›</span></div></div>
+  </div>
+
+  <!-- Hoja inferior -->
+  <!-- Onboarding: tres pasos, sin cuenta ni tutorial -->
+  <div class="onb" id="onb">
+    <div class="onb-dots" id="onbDots"></div>
+    <div class="onb-body" id="onbBody"></div>
+    <div class="onb-foot">
+      <button class="onb-back" id="onbBack">Atrás</button>
+      <button class="cta" id="onbNext" style="flex:1">Continuar</button>
+    </div>
+  </div>
+
+  <div class="veil" id="veil" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-head" id="sheetHead">
+      <div class="grab"></div>
+      <h2 id="shTitle">Toma</h2>
+      <p class="sh-sub" id="shSub">Se guarda al confirmar. Puedes corregirla después.</p>
+    </div>
+
+    <div class="field">
+      <div class="field-label" id="whenLabel">¿Cuándo?</div>
+    <div class="chips" id="whenChips"></div>
+    </div>
+
+    <div id="tunerSlot"></div>
+
+    <div class="field" id="detailField">
+      <div class="field-label" id="detailLabel">Lado</div>
+      <div class="chips" id="detailChips"></div>
+    </div>
+
+    <div id="condSlot"></div>
+
+    <div id="extraFields"></div>
+
+    <button class="cta" id="cta" onclick="confirm_()">Guardar</button>
+    <button class="cta-alt" id="ctaTimer" style="display:none">Iniciar cronómetro</button>
+    <button class="link" id="sheetLink" onclick="closeSheet()">Añadir detalles</button>
+    <button class="link danger" id="delBtn" style="display:none">Eliminar evento</button>
+  </div>
+
+  <div class="toast" id="toast">Guardado</div>
+
+  <div class="tabs">
+    <button class="tab on" data-s="s-hoy"><svg class="ti"><use href="#i-home"/></svg>Hoy</button>
+    <button class="tab" data-s="s-tl"><svg class="ti"><use href="#i-list"/></svg>Historial</button>
+    <button class="tab" data-s="s-st"><svg class="ti"><use href="#i-chart"/></svg>Evolución</button>
+    <button class="tab" data-s="s-pf"><svg class="ti"><use href="#i-baby"/></svg>Perfil</button>
+  </div>
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+// Debe declararse antes que nada: pintaHoy() lo usa al cargar.
+const perfil={nombre:'',sexo:'Niña',nacim:'Hoy',premat:false,semanas:32,alim:'Pecho'};
+
+// ================= FORMATO DE TIEMPO =================
+// Una única función por formato, usada en toda la app.
+// Deben declararse antes del bloque de datos: renderTl() las usa al cargar.
+function hhmm(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+function span(m){return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')}
+function hm(m){return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')}
+
+// ================= FUENTE ÚNICA DE DATOS =================
+// Un solo array alimenta la banda, el resumen y el historial.
+// Minutos desde 00:00. "Ahora" son las 14:32.
+const today=[
+  {k:'sleep', s:0,   e:150},
+  {k:'feed',  s:155, dur:10, m:'Pecho',   lado:'Derecho'},
+  {k:'diaper',s:157, cont:'Pis'},
+  {k:'sleep', s:170, e:380},
+  {k:'feed',  s:385, dur:18, m:'Pecho',   lado:'Izquierdo'},
+  {k:'diaper',s:430, cont:'Pis'},
+  {k:'sleep', s:460, e:545},
+  {k:'feed',  s:550, m:'Biberón', ml:120, cont:'Fórmula'},
+  {k:'diaper',s:552, cont:'Mixto'},
+  {k:'sleep', s:620, e:705, est:true},
+  {k:'feed',  s:735, dur:18, m:'Pecho',   lado:'Izquierdo'},
+  {k:'diaper',s:807, cont:'Caca', cons:'Blanda'}
+];
+const COL={sleep:'var(--sleep)',feed:'var(--feed)',diaper:'var(--diaper)'};
+
+// --- Banda de ritmo ---
+const band=document.getElementById('band');
+today.forEach(ev=>{
+  const d=document.createElement('div');
+  d.className='blk';d.style.background=COL[ev.k];
+  const end=ev.e??(ev.s+(ev.dur||6));
+  d.style.left=(ev.s/1440*100)+'%';
+  d.style.width=Math.max((end-ev.s)/1440*100,.7)+'%';
+  if(ev.k==='sleep'){d.style.top='4px';d.style.bottom='22px'}
+  else if(ev.k==='feed'){d.style.top='26px';d.style.bottom='4px'}
+  else{d.style.top='34px';d.style.bottom='4px';d.style.opacity='.9'}
+  band.appendChild(d);
+});
+const nw=document.createElement('div');nw.className='now';
+nw.style.left=(872/1440*100)+'%';band.appendChild(nw);
+// El futuro no es un hueco sin registrar: aún no ha pasado
+const fut=document.createElement('div');fut.className='future';
+fut.style.left=(872/1440*100)+'%';band.appendChild(fut);
+
+// --- Deslizar por la banda para leer qué ocurría en cada momento ---
+// Deslizar, no tocar: a 15 px por hora, una toma de 15 min mide 3,6 px.
+const scrub=document.createElement('div');scrub.className='scrub';band.appendChild(scrub);
+const read=document.getElementById('bandRead');
+const AHORA='Ahora '+hhmm(872);
+
+function queOcurria(m){
+  if(m>872)return{t:'Sin registrar',s:''};
+  const dentro=today.find(e=>{
+    const fin=e.e??(e.s+(e.dur||6));
+    return m>=e.s&&m<=fin&&e.k!=='diaper';
+  });
+  if(dentro){
+    if(dentro.k==='sleep')return{t:isNight(dentro)?'Sueño nocturno':'Siesta',
+      s:span(dentro.e-dentro.s)};
+    return{t:title(dentro),s:meta(dentro)};
+  }
+  const pañal=today.find(e=>e.k==='diaper'&&Math.abs(e.s-m)<=8);
+  if(pañal)return{t:'Pañal',s:pañal.cont.toLowerCase()};
+  const prev=today.filter(e=>e.k==='sleep'&&(e.e??e.s)<=m).pop();
+  const next=today.find(e=>e.k==='sleep'&&e.s>m);
+  if(prev&&next)return{t:'Despierta',s:span(next.s-prev.e)};
+  if(prev)return{t:'Despierta',s:'desde las '+hhmm(prev.e%1440)};
+  return{t:'Despierta',s:''};
+}
+(()=>{
+  let activo=false;
+  const mover=e=>{
+    const r=band.getBoundingClientRect();
+    const p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+    const m=Math.round(p*1440);
+    scrub.style.left=(p*100)+'%';
+    const q=queOcurria(m);
+    read.innerHTML=`<span class="live">${hhmm(m)} · ${q.t}${q.s?' · '+q.s:''}</span>`;
+  };
+  band.addEventListener('pointerdown',e=>{
+    activo=true;scrub.classList.add('on');band.setPointerCapture(e.pointerId);mover(e);
+  });
+  band.addEventListener('pointermove',e=>{if(activo)mover(e)});
+  const soltar=()=>{
+    if(!activo)return;
+    activo=false;scrub.classList.remove('on');
+    setTimeout(()=>{if(!activo)read.textContent=AHORA},900);
+  };
+  band.addEventListener('pointerup',soltar);
+  band.addEventListener('pointercancel',soltar);
+})();
+
+// --- Resumen derivado, no escrito a mano ---
+// night_of (B10): la noche pertenece al día en que EMPIEZA.
+// Un tramo que arranca antes de las 06:00 es continuación de la noche anterior.
+const NIGHT_CUT=360;
+const esInicioNoche=e=>e.k==='sleep'&&e.s>=1140;
+const esColaNoche  =e=>e.k==='sleep'&&e.s<NIGHT_CUT;
+const isNight=e=>esInicioNoche(e)||esColaNoche(e);
+// Noche que empezó el día i = su tramo inicial + la cola del día siguiente (i-1 en el array)
+function nocheDe(i){
+  const suma=(l,f)=>(l||[]).filter(f).reduce((a,e)=>a+(e.e-e.s),0);
+  return suma(dias[i]?.ev,esInicioNoche)+suma(dias[i-1]?.ev,esColaNoche);
+}
+
+// --- Historial ---
+const title=e=>{
+  if(e.k==='sleep')return e.night?'Sueño nocturno':'Siesta';
+  if(e.k==='feed')return e.m==='Biberón'?'Toma · biberón':'Toma · pecho '+e.lado.toLowerCase();
+  return 'Pañal';
+};
+const meta=e=>{
+  if(e.k==='sleep'){
+    const t=hm(e.e-e.s)+' min · hasta '+hhmm(e.e%1440);
+    return e.wakes?t+' · '+e.wakes+' despertares':t;
+  }
+  if(e.k==='feed')return e.m==='Biberón'?e.ml+' ml · '+e.cont.toLowerCase():e.dur+' min';
+  return e.cons?e.cont+' · '+e.cons.toLowerCase():e.cont;
+};
+// ================= LÍNEA TEMPORAL =================
+// 14 días generados con deriva: la noche se consolida y las siestas se reducen.
+// El objetivo es que el patrón sea visible al desplazarse, sin leer cifras.
+const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const NACIM=new Date(2026,4,7);          // 7 de mayo de 2026
+const HOY=new Date(2026,7,19);
+
+function genDia(back){
+  const d=[],rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  // deriva: hace 14 días la noche empezaba más tarde y se rompía más
+  const k=(14-back)/14;
+  const ini=Math.round(1290+35*(1-k));    // 21:30 → 22:05
+  const cortes=back>9?2:back>4?1:1;
+  let t=0;
+  const finNoche=Math.round(370+15*(1-k));
+  // tramos nocturnos ya en curso al empezar el día
+  if(cortes===2){
+    d.push({k:'sleep',s:0,e:150});
+    d.push({k:'feed',s:155,dur:rnd(8,14),m:'Pecho',lado:'Derecho'});
+    d.push({k:'diaper',s:157,cont:'Pis'});
+    d.push({k:'sleep',s:170,e:finNoche});
+  }else{
+    d.push({k:'sleep',s:0,e:finNoche});
+  }
+  t=finNoche+5;
+  d.push({k:'feed',s:t,dur:rnd(15,20),m:'Pecho',lado:'Izquierdo'});
+  d.push({k:'diaper',s:t+45,cont:'Pis'});
+  // siestas: 3 al principio del periodo, 2 al final
+  const siestas=back>7?3:2;
+  for(let i=0;i<siestas;i++){
+    const s=Math.round(finNoche+90+i*(210+30*k));
+    const dur=Math.round((100-18*k)-i*8);
+    d.push({k:'sleep',s,e:s+dur,est:back===3&&i===1});
+    d.push({k:'feed',s:s+dur+8,...(i%2?{m:'Biberón',ml:rnd(4,6)*30,cont:'Fórmula'}
+                                     :{dur:rnd(14,20),m:'Pecho',lado:i?'Derecho':'Izquierdo'})});
+    d.push({k:'diaper',s:s+dur+12,...(i===1?{cont:'Caca',cons:'Blanda'}:{cont:'Pis'})});
+  }
+  d.push({k:'feed',s:ini-40,dur:rnd(18,24),m:'Pecho',lado:'Derecho'});
+  d.push({k:'sleep',s:ini,e:1440,night:true,wakes:cortes});
+  return d.filter(e=>back>0||e.s<872);   // hoy solo hasta las 14:32
+}
+const dias=Array.from({length:14},(_,i)=>{
+  const f=new Date(HOY);f.setDate(f.getDate()-i);
+  return {fecha:f,ev:i===0?today:genDia(i)};
+});
+
+// Intervalo entre dos fechas. edad() es el caso particular desde el nacimiento.
+function intervalo(desde,hasta){
+  let m=(hasta.getFullYear()-desde.getFullYear())*12+hasta.getMonth()-desde.getMonth();
+  let d=hasta.getDate()-desde.getDate();
+  if(d<0){m--;d+=new Date(hasta.getFullYear(),hasta.getMonth(),0).getDate()}
+  return{m,d};
+}
+// Formato de edad. Una sola regla, dos variantes.
+//   0 días · menos de 1 mes en días · hasta 24 meses en meses · a partir de ahí en años
+function textoEdad(desde,hasta,op={}){
+  const{sexo,corto=false}=op;
+  const{m,d}=intervalo(desde,hasta);
+  if(m<0)return'—';
+  if(m===0&&d===0)return sexo==='Niño'?'Recién nacido':sexo?'Recién nacida':'0 días';
+  if(m===0)return corto?d+' d':d+(d===1?' día':' días');
+  if(m<24)return corto?`${m} m ${d} d`:`${m} ${m===1?'mes':'meses'} y ${d} ${d===1?'día':'días'}`;
+  const a=Math.floor(m/12),r=m%12;
+  if(corto)return r?`${a} a ${r} m`:`${a} a`;
+  return r?`${a} años y ${r} ${r===1?'mes':'meses'}`:`${a} años`;
+}
+const edad=f=>textoEdad(NACIM,f,{corto:true});
+const fechaTxt=(f,i)=>i===0?'Hoy':i===1?'Ayer':
+  DIAS[f.getDay()].replace(/^./,c=>c.toUpperCase())+' '+f.getDate();
+
+let filtro='todo';
+const enFiltro=e=>filtro==='todo'||
+  (filtro==='sleep'&&e.k==='sleep')||(filtro==='feed'&&e.k==='feed')||(filtro==='diaper'&&e.k==='diaper');
+
+function bandaHTML(ev){
+  return ev.map(e=>{
+    const fin=e.e??(e.s+(e.dur||6));
+    const pos=e.k==='sleep'?'top:3px;bottom:13px':e.k==='feed'?'top:15px;bottom:3px':'top:19px;bottom:3px';
+    return `<div class="blk${enFiltro(e)?'':' dim'}" style="background:${COL[e.k]};${pos};
+      left:${e.s/1440*100}%;width:${Math.max((fin-e.s)/1440*100,.7)}%"></div>`;
+  }).join('');
+}
+function resumen(i){
+  const ev=dias[i].ev;
+  const si=ev.filter(e=>e.k==='sleep'&&!isNight(e)).length;
+  const n=nocheDe(i);
+  const noche=i===0?'noche en curso':hm(n)+' noche';
+  return `${noche} · ${si} siestas · ${ev.filter(e=>e.k==='feed').length} tomas · ${ev.filter(e=>e.k==='diaper').length} pañales`;
+}
+// --- Dashboard: se recalcula entero cada vez. Nunca escrito a mano. ---
+const AHORA_M=872;
+function pintaHoy(){
+  document.getElementById('cName').textContent=perfil.nombre||'Martina';
+  document.getElementById('heroSub').textContent=
+    textoEdad(NACIM,HOY,{sexo:perfil.sexo})+' \u00b7 '+
+    DIAS[HOY.getDay()].replace(/^./,c=>c.toUpperCase())+' '+HOY.getDate();
+
+  const fem=perfil.sexo!=='Ni\u00f1o';
+  const durmiendo=today.find(e=>e.k==='sleep'&&e.s<=AHORA_M&&e.e>AHORA_M);
+  const ultSueno=today.filter(e=>e.k==='sleep'&&e.e<=AHORA_M).pop();
+  const ultToma =today.filter(e=>e.k==='feed').pop();
+  const ultPanal=today.filter(e=>e.k==='diaper').pop();
+  const grande=m=>{const H=Math.floor(m/60),M=m%60;
+    return H?`${H}<small> h </small>${String(M).padStart(2,'0')}<small> min</small>`
+            :`${M}<small> min</small>`};
+
+  if(durmiendo){
+    document.getElementById('heroEye').textContent='Durmiendo desde las '+hhmm(durmiendo.s);
+    document.getElementById('heroBig').innerHTML=grande(AHORA_M-durmiendo.s);
+    document.getElementById('aSleepN').textContent='Se ha despertado';
+    document.getElementById('aSleepH').textContent='Lleva '+span(AHORA_M-durmiendo.s);
+  }else{
+    document.getElementById('heroEye').textContent=
+      (fem?'Despierta':'Despierto')+(ultSueno?' desde las '+hhmm(ultSueno.e):'');
+    document.getElementById('heroBig').innerHTML=grande(AHORA_M-(ultSueno?ultSueno.e:0));
+    document.getElementById('aSleepN').textContent='Se ha dormido';
+    document.getElementById('aSleepH').textContent=ultSueno?'\u00daltima siesta '+hhmm(ultSueno.s):'';
+  }
+  document.getElementById('heroNote').innerHTML=ultToma
+    ? `<span class="dot" style="background:var(--feed)"></span>\u00daltima toma a las ${hhmm(ultToma.s)} \u00b7 ${meta(ultToma)}`
+    : 'Sin tomas registradas hoy';
+  document.getElementById('aFeedH').textContent=ultToma?'Hace '+span(AHORA_M-ultToma.s):'Ninguna hoy';
+  document.getElementById('aDiaperH').textContent=ultPanal?'Hace '+span(AHORA_M-ultPanal.s):'Ninguno hoy';
+
+  document.getElementById('nNight').textContent=hm(nocheDe(1));
+  document.getElementById('nFeed').textContent=today.filter(e=>e.k==='feed').length;
+  document.getElementById('nDiaper').textContent=today.filter(e=>e.k==='diaper').length;
+}
+pintaHoy();
+function renderTl(){
+  document.getElementById('tlBody').innerHTML=dias.map((d,i)=>`
+    <div class="dayc${i===0?' open':''}" id="d${i}">
+      <button class="dayh" onclick="toggleDia(${i})">
+        <span class="dh-row">
+          <span class="dh-date">${fechaTxt(d.fecha,i)}</span>
+          <span class="dh-age">${edad(d.fecha)}</span>
+          <span class="dh-go">›</span>
+        </span>
+        <span class="miniband">${bandaHTML(d.ev)}</span>
+        <span class="dsum">${resumen(i)}</span>
+      </button>
+      <div class="dayev">
+        ${[...d.ev].sort((a,b)=>b.s-a.s).map((e,j)=>`
+          <button class="ev${enFiltro(e)?'':' hide'}" onclick="editEv(${i},${j})">
+            <span class="ev-time">${hhmm(e.s%1440)}</span>
+            <span class="ev-bar" style="background:${COL[e.k]}"></span>
+            <span class="ev-body">
+              <span class="ev-title">${title(e)}${e.est?'<span class="tag">Estimado</span>':''}</span>
+              <span class="ev-meta">${meta(e)}</span>
+            </span>
+            <span class="ev-go">›</span>
+          </button>`).join('')}
+        <button class="addday" onclick="addOn(${i})">+ Añadir evento en este día</button>
+      </div>
+    </div>`).join('');
+}
+function toggleDia(i){document.getElementById('d'+i).classList.toggle('open')}
+function editEv(i,j){openSheet([...dias[i].ev].sort((a,b)=>b.s-a.s)[j].k,
+  [...dias[i].ev].sort((a,b)=>b.s-a.s)[j])}
+function addOn(i){toast('Añadir en '+fechaTxt(dias[i].fecha,i))}
+
+// Filtros
+const FILTROS=[['todo','Todo'],['sleep','Sueño'],['feed','Tomas'],['diaper','Pañales']];
+document.getElementById('filters').innerHTML=FILTROS.map(([k,l],i)=>
+  `<button class="filt${i===0?' on':''}" onclick="setFiltro('${k}',this)">${l}</button>`).join('');
+function setFiltro(k,btn){
+  filtro=k;
+  document.querySelectorAll('.filt').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const abiertos=[...document.querySelectorAll('.dayc.open')].map(e=>e.id);
+  renderTl();
+  abiertos.forEach(id=>document.getElementById(id)?.classList.add('open'));
+}
+renderTl();
+
+// --- Sparklines ---
+const draw=(id,vals,col)=>{
+  const el=document.getElementById(id),mx=Math.max(...vals);
+  vals.forEach(v=>{const i=document.createElement('i');
+    i.style.height=(v/mx*100)+'%';i.style.background=col;el.appendChild(i)});
+};
+draw('sp1',[10.5,11.2,10.8,11.9,12.1,11.4,10.9,11.6,12.3,11.1,10.7,11.8,11.5,11.3],'var(--sleep)');
+draw('sp2',[8,7,7,6,8,7,7,8,6,7,8,7,6,7],'var(--feed)');
+draw('sp3',[6,5,6,7,5,6,6,5,7,6,5,6,6,5],'var(--diaper)');
+
+// --- Tabs ---
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on');document.getElementById(t.dataset.s).classList.add('on');
+});
+
+// --- Chips ---
+const bindChips=box=>box.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+  box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
+bindChips(document.getElementById('whenChips'));
+
+// --- Hoja ---
+const cfg={
+  feed:{t:'Toma',w:'¿Cuándo empezó la toma?',l:'Método',o:['Pecho','Biberón'],c:''},
+  sleep:{t:'Se ha dormido',w:'¿Cuándo se durmió?',l:'Dónde',o:['Cuna','Brazos','Carrito'],c:'sleep'},
+  diaper:{t:'Pañal',w:'¿Cuándo?',l:'Contenido',o:['Pis','Caca','Mixto'],c:''}
+};
+
+// --- Campos que aparecen al expandir ---
+const extra={
+  feed:()=>{
+    const bottle=metodoActual==='Biberón';
+    // Quien da pecho en exclusiva puede dar un biberón un día suelto
+    const cambio=preguntarMetodo()?'':`
+      <div class="field"><div class="field-label">Método</div>
+        <div class="chips" id="metChips">${['Pecho','Biberón'].map(o=>
+          `<button class="chip${metodoActual===o?' on':''}">${o}</button>`).join('')}</div></div>`;
+    return cambio+(bottle
+      ? `${chipField('Contenido','cont',['Fórmula','Leche materna','Mixto'],0)}
+         ${noteField('Se dejó parte, regurgitó…')}`
+      : `${chipField('Duración','dur',['5 min','10 min','15 min','20 min','25 min','Otra'],2)}
+         ${noteField('Se quedó dormida a mitad, tomó poco…')}`);
+  },
+  sleep:()=>`
+    ${chipField('Hora de fin','fin',['Sigue durmiendo','Hace 5 min','Hace 15 min','Otra'],0)}
+    ${counterField('Despertares')}
+    ${noteField('Se despertó llorando, ruido en la calle…')}`,
+  diaper:()=>`
+    <div id="stoolFields"></div>
+    ${chipField('Cantidad','cant',['Poca','Normal','Mucha'],1)}
+    ${noteField('Irritación, restos de alimento…')}`
+};
+const stool=()=>`
+  ${chipField('Consistencia','cons',['Líquida','Blanda','Formada','Dura'],1)}
+  ${chipField('Color','col',['Amarillo','Marrón','Verde','Negro','Rojo','Blanco'],0,'wrap')}`;
+
+function chipField(label,id,opts,def,extraCls=''){
+  return `<div class="field"><div class="field-label">${label}</div>
+    <div class="chips ${extraCls}" data-auto>${opts.map((o,i)=>
+      `<button class="chip${i===def?' on':''}">${o}</button>`).join('')}</div></div>`;
+}
+function counterField(label){
+  return `<div class="field"><div class="field-label">${label}</div>
+    <div class="counter"><button class="step" onclick="cnt(-1)">−</button>
+    <b id="cntVal">0</b><button class="step" onclick="cnt(1)">+</button></div></div>`;
+}
+function noteField(ph){
+  return `<div class="field"><div class="field-label">Nota</div>
+    <textarea class="note-input" placeholder="${ph}"></textarea></div>`;
+}
+let cntN=0;
+function cnt(n){cntN=Math.max(0,cntN+n);document.getElementById('cntVal').textContent=cntN}
+
+function expand(k){
+  const box=document.getElementById('extraFields');
+  box.innerHTML=extra[k]();
+  document.getElementById('sheet').classList.add('expanded');
+  box.querySelectorAll('.chips[data-auto]').forEach(bindChips);
+  const met=document.getElementById('metChips');
+  if(met)met.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    met.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');syncFeed();expand('feed');
+  });
+  if(k==='diaper')syncStool();
+  const lk=document.getElementById('sheetLink');
+  lk.textContent='Ocultar detalles';
+  lk.onclick=()=>{box.innerHTML='';document.getElementById('sheet').classList.remove('expanded');
+    lk.textContent='Añadir detalles';lk.onclick=()=>expand(k)};
+}
+let lastMl=150;   // se recuerda entre tomas: casi siempre es la misma
+let ml=150;
+
+let metodoActual='Pecho';
+// El onboarding no preselecciona: elimina el campo cuando la familia es exclusiva.
+const preguntarMetodo=()=>perfil.alim==='Ambos';
+
+function syncFeed(){
+  const sel=document.querySelector('#detailChips .chip.on');
+  const desdeDetalle=document.querySelector('#metChips .chip.on');
+  metodoActual=preguntarMetodo()
+    ? (sel?sel.textContent:'Pecho')
+    : (desdeDetalle?desdeDetalle.textContent:perfil.alim);
+  const bottle=metodoActual==='Biberón';
+  const s=document.getElementById('condSlot');
+  if(bottle){
+    ml=lastMl;
+    const opts=[90,120,150,180];
+    s.innerHTML=`<div class="field">
+      <div class="field-label">Cantidad tomada</div>
+      <div class="chips" id="mlChips">${opts.map(v=>
+        `<button class="chip${v===lastMl?' on':''}">${v}</button>`).join('')}
+        <button class="chip">Otra</button></div>
+      <div id="mlTuner"></div></div>`;
+    const box=document.getElementById('mlChips');
+    box.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+      box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+      if(c.textContent==='Otra'){openMl()}
+      else{ml=parseInt(c.textContent);document.getElementById('mlTuner').innerHTML=''}
+    });
+  }else{
+    s.innerHTML=`<div class="field"><div class="field-label">Lado</div>
+      <div class="chips" data-auto>${['Izquierdo','Derecho','Ambos'].map((o,i)=>
+        `<button class="chip${i===0?' on':''}">${o}</button>`).join('')}</div></div>`;
+    s.querySelectorAll('.chips[data-auto]').forEach(bindChips);
+  }
+}
+function openMl(){
+  document.getElementById('mlTuner').innerHTML=`
+    <div class="tuner" style="margin-top:9px">
+      <button class="step" onclick="bumpMl(-10)">−10</button>
+      <div class="tuner-val" id="mlVal">${ml}<span style="font-size:14px"> ml</span></div>
+      <button class="step" onclick="bumpMl(10)">+10</button>
+    </div>`;
+}
+function bumpMl(n){
+  ml=Math.max(10,Math.min(400,ml+n));
+  document.getElementById('mlVal').innerHTML=ml+'<span style="font-size:14px"> ml</span>';
+}
+
+// Consistencia y color solo existen si hay deposición
+function syncStool(){
+  const sel=document.querySelector('#detailChips .chip.on');
+  const has=sel&&(sel.textContent==='Caca'||sel.textContent==='Mixto');
+  const slot=document.getElementById('stoolFields');
+  if(!slot)return;
+  slot.innerHTML=has?stool():'';
+  slot.querySelectorAll('.chips[data-auto]').forEach(bindChips);
+}
+let curK=null;
+function openSheet(k,ev){
+  const c=cfg[k];
+  curK=k;
+  document.getElementById('shTitle').textContent=ev?'Editar · '+c.t:c.t;
+  document.getElementById('shSub').textContent=ev
+    ? 'Registrado a las '+hhmm(ev.s%1440)+'. Los cambios se guardan al confirmar.'
+    : 'Se guarda al confirmar. Puedes corregirla después.';
+  document.getElementById('whenLabel').textContent=c.w;
+  LO=NOW-720;HI=NOW;
+  buildWhen([0,15,30,'otra'],'abs');
+  document.getElementById('tunerSlot').innerHTML='';
+  document.getElementById('detailField').style.display='';
+  document.getElementById('detailLabel').textContent=c.l;
+  const box=document.getElementById('detailChips');
+  box.innerHTML=c.o.map((o,i)=>`<button class="chip${i===0?' on':''}">${o}</button>`).join('');
+  bindChips(box);
+  if(k==='diaper')box.querySelectorAll('.chip').forEach(ch=>
+    ch.addEventListener('click',syncStool));
+  const cs=document.getElementById('condSlot');cs.innerHTML='';
+  if(k==='feed'){
+    const df=document.getElementById('detailField');
+    if(preguntarMetodo()){
+      df.style.display='';
+      document.getElementById('detailLabel').textContent='Método';
+      box.innerHTML=['Pecho','Biberón'].map((o,i)=>
+        `<button class="chip${i===0?' on':''}">${o}</button>`).join('');
+      bindChips(box);
+      box.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',syncFeed));
+    }else{
+      df.style.display='none';   // familia exclusiva: un toque menos
+    }
+    syncFeed();
+  }
+  document.getElementById('extraFields').innerHTML='';
+  document.getElementById('sheet').classList.remove('expanded');
+  cntN=0;
+  const cta=document.getElementById('cta');
+  cta.className='cta '+c.c;
+  cta.textContent=ev?'Guardar cambios':'Guardar';
+  cta.onclick=()=>{closeSheet();toast(ev?'Cambios guardados':'Guardado')};
+  const lk=document.getElementById('sheetLink');
+  lk.textContent='Añadir detalles';lk.className='link';lk.onclick=()=>expand(k);
+  const del=document.getElementById('delBtn');
+  del.style.display=ev?'block':'none';
+  del.onclick=()=>{closeSheet();toast('Evento eliminado · Deshacer')};
+
+  // Cronómetro: solo cuando el evento está pasando ahora y tiene duración
+  const tm=document.getElementById('ctaTimer');
+  const conDuracion=!ev&&(k==='sleep'||(k==='feed'&&metodoActual!=='Biberón'));
+  tm.style.display=conDuracion?'block':'none';
+  if(k==='sleep'){
+    // El sueño no se puede estimar al empezar: el cronómetro es el camino principal
+    cta.textContent='Se ha dormido';
+    cta.onclick=()=>{closeSheet();abrirEvento('sleep')};
+    tm.style.display='none';
+  }else if(conDuracion){
+    tm.textContent='Iniciar cronómetro';
+    tm.onclick=()=>{closeSheet();
+      abrirEvento('feed',document.querySelector('#condSlot .chip.on')?.textContent||'')};
+  }
+  // Alternancia de pechos: lo que de verdad se consulta
+  if(k==='feed'&&!ev&&metodoActual!=='Biberón'){
+    const lado=siguienteLado();
+    if(lado)document.getElementById('shSub').textContent='Última toma: pecho '+
+      (lado==='Derecho'?'izquierdo':'derecho')+'. Toca empezar por el '+lado.toLowerCase()+'.';
+  }
+  if(ev)expand(k);
+  document.getElementById('veil').classList.add('on');
+  document.getElementById('sheet').classList.add('on');
+}
+function closeSheet(){
+  const sh=document.getElementById('sheet');
+  sh.style.transition='';sh.style.transform='';
+  document.getElementById('veil').classList.remove('on');
+  sh.classList.remove('on');
+}
+
+// --- Gestos: abajo cierra, arriba expande ---
+// Anclado a la cabecera para no competir con el desplazamiento del contenido.
+(()=>{
+  const sh=document.getElementById('sheet'), head=document.getElementById('sheetHead');
+  let y0=null, dy=0;
+  head.addEventListener('pointerdown',e=>{
+    y0=e.clientY;dy=0;sh.style.transition='none';head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove',e=>{
+    if(y0===null)return;
+    dy=e.clientY-y0;
+    // resistencia al arrastrar hacia arriba: no se despega del borde
+    sh.style.transform='translateY('+(dy>0?dy:dy/4)+'px)';
+  });
+  const soltar=()=>{
+    if(y0===null)return;
+    sh.style.transition='';sh.style.transform='';
+    if(dy>90)closeSheet();
+    else if(dy<-50&&curK&&!sh.classList.contains('expanded'))expand(curK);
+    y0=null;
+  };
+  head.addEventListener('pointerup',soltar);
+  head.addEventListener('pointercancel',soltar);
+})();
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);
+}
+function confirm_(){closeSheet();toast('Guardado · toca Historial para corregir')}
+
+// --- Tema ---
+const setTheme=v=>{document.body.dataset.theme=v;
+  document.getElementById('tNight').classList.toggle('on',v==='night');
+  document.getElementById('tDay').classList.toggle('on',v==='day')};
+document.getElementById('tNight').onclick=()=>setTheme('night');
+document.getElementById('tDay').onclick=()=>setTheme('day');
+
+// ================= ONBOARDING =================
+// Sin cuenta, sin correo, sin permisos, sin tutorial. Tres pasos.
+let paso=0;
+
+const PASOS=[
+  {q:'¿Cómo se llama?',h:'Solo se guarda en este dispositivo.',
+   render:()=>`
+     <input class="onb-in" id="pNombre" placeholder="Nombre" value="${perfil.nombre}">
+     <div class="field-label">Sexo</div>
+     <div class="chips" id="pSexo">${['Niña','Niño'].map(o=>
+       `<button class="chip${perfil.sexo===o?' on':''}">${o}</button>`).join('')}</div>
+     <p class="onb-h" style="margin-top:14px;margin-bottom:0">
+       Se usa para escribir bien las frases y, más adelante, para las curvas de crecimiento.</p>`},
+
+  {q:'¿Cuándo nació?',h:'Todo lo demás se calcula a partir de esta fecha.',
+   render:()=>`
+     <div class="chips" id="pNacim">${['Hoy','Ayer','Otra fecha'].map(o=>
+       `<button class="chip${perfil.nacim===o?' on':''}">${o}</button>`).join('')}</div>
+     <div id="pFecha"></div>
+     <div class="premie">
+       <label class="premie-t">
+         <input type="checkbox" id="pPrem" ${perfil.premat?'checked':''}>
+         Nació antes de las 37 semanas
+       </label>
+       <div id="pSem"></div>
+     </div>`},
+
+  {q:'¿Cómo se alimenta?',h:'Puedes cambiarlo cuando quieras.',
+   render:()=>`
+     <div class="chips" id="pAlim">${['Pecho','Biberón','Ambos'].map(o=>
+       `<button class="chip${perfil.alim===o?' on':''}">${o}</button>`).join('')}</div>
+     <p class="onb-h" style="margin-top:18px;margin-bottom:0">
+       Ajusta los iconos y los valores por defecto del registro.</p>`}
+];
+
+function pintaPaso(){
+  document.getElementById('onbDots').innerHTML=
+    PASOS.map((_,i)=>`<i class="${i<=paso?'on':''}"></i>`).join('');
+  const p=PASOS[paso];
+  document.getElementById('onbBody').innerHTML=
+    `<div class="onb-q">${p.q}</div><div class="onb-h">${p.h}</div>`+p.render();
+  document.getElementById('onbBack').style.visibility=paso?'visible':'hidden';
+  document.getElementById('onbNext').textContent=paso===PASOS.length-1?'Empezar':'Continuar';
+
+  const pick=(id,campo)=>{const b=document.getElementById(id);if(!b)return;
+    b.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+      b.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on');perfil[campo]=c.textContent;});};
+  pick('pSexo','sexo');pick('pAlim','alim');
+
+  // Fecha de nacimiento: teclear es más rápido que una rueda para un dato que se sabe de memoria
+  const bn=document.getElementById('pNacim');
+  if(bn)bn.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    bn.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');perfil.nacim=c.textContent;pintaFecha();
+  });
+  pintaFecha();
+
+  // Semanas de gestación: solo si es prematuro. Determina la edad corregida.
+  const chk=document.getElementById('pPrem');
+  if(chk){
+    const sem=()=>{
+      document.getElementById('pSem').innerHTML=perfil.premat?`
+        <div class="field-label" style="margin-top:6px">Semanas de gestación</div>
+        <div class="tuner">
+          <button class="step" onclick="bumpSem(-1)">−1</button>
+          <div class="tuner-val" id="semVal">${perfil.semanas}</div>
+          <button class="step" onclick="bumpSem(1)">+1</button>
+        </div>
+        <div class="tuner-dur">La edad corregida se usará para los hitos del desarrollo</div>`:'';
+    };
+    chk.onchange=()=>{perfil.premat=chk.checked;sem()};
+    sem();
+  }
+}
+function pintaFecha(){
+  const slot=document.getElementById('pFecha');
+  if(!slot)return;
+  if(perfil.nacim!=='Otra fecha'){slot.innerHTML='';return}
+  slot.innerHTML=`
+    <div class="field-label" style="margin-top:18px">Fecha de nacimiento</div>
+    <div class="dmy">
+      <input id="fD" inputmode="numeric" maxlength="2" placeholder="DD" value="${perfil.d||''}">
+      <span>/</span>
+      <input id="fM" inputmode="numeric" maxlength="2" placeholder="MM" value="${perfil.m||''}">
+      <span>/</span>
+      <input id="fY" inputmode="numeric" maxlength="4" placeholder="AAAA" value="${perfil.y||''}" style="flex:1.6">
+    </div>
+    <div class="dmy-out" id="fOut"></div>`;
+  const ids=['fD','fM','fY'];
+  ids.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.oninput=()=>{
+      el.value=el.value.replace(/\D/g,'');
+      perfil[id[1].toLowerCase()]=el.value;
+      // salto automático al siguiente campo
+      if(el.value.length===el.maxLength&&i<2)document.getElementById(ids[i+1]).focus();
+      validaFecha();
+    };
+  });
+  validaFecha();
+}
+function validaFecha(){
+  const out=document.getElementById('fOut');if(!out)return;
+  const d=+perfil.d,m=+perfil.m,y=+perfil.y;
+  if(!perfil.d||!perfil.m||!perfil.y||String(perfil.y).length<4){
+    out.className='dmy-out';out.textContent='';perfil.fechaOk=false;return;
+  }
+  const f=new Date(y,m-1,d);
+  if(f.getDate()!==d||f.getMonth()!==m-1||f.getFullYear()!==y){
+    out.className='dmy-out err';out.textContent='Ese día no existe. Revisa el mes.';
+    perfil.fechaOk=false;return;
+  }
+  if(f>HOY){
+    out.className='dmy-out err';out.textContent='La fecha no puede ser futura.';
+    perfil.fechaOk=false;return;
+  }
+  out.className='dmy-out';
+  out.innerHTML=`Tendría <b>${textoEdad(f,HOY,{sexo:perfil.sexo})}</b>`;
+  perfil.fechaOk=true;perfil.fechaNac=f;
+}
+function bumpSem(n){
+  perfil.semanas=Math.max(23,Math.min(36,perfil.semanas+n));
+  document.getElementById('semVal').textContent=perfil.semanas;
+}
+document.getElementById('onbBack').onclick=()=>{if(paso){paso--;pintaPaso()}};
+document.getElementById('onbNext').onclick=()=>{
+  const inp=document.getElementById('pNombre');if(inp)perfil.nombre=inp.value;
+  if(paso===1&&perfil.nacim==='Otra fecha'&&!perfil.fechaOk){
+    const out=document.getElementById('fOut');
+    if(out){out.className='dmy-out err';
+      out.textContent=out.textContent||'Falta la fecha de nacimiento.'}
+    return;
+  }
+  if(paso<PASOS.length-1){paso++;pintaPaso()}
+  else{document.getElementById('onb').classList.remove('on');
+    document.body.dataset.state='empty';
+    aplicaPerfil();
+    document.querySelectorAll('.tab')[0].click();
+    toast('Perfil creado · registra el primer evento')}
+};
+// El icono de toma refleja cómo se alimenta: quien solo da fórmula
+// no debería ver nunca un icono de pecho.
+function aplicaPerfil(){
+  const u=document.querySelector('.tint-feed use, .fill-feed use');
+  if(u)u.setAttribute('href',perfil.alim==='Biberón'?'#i-bottle':'#i-drop');
+  pintaHoy();
+}
+document.getElementById('tOnb').onclick=()=>{
+  paso=0;pintaPaso();document.getElementById('onb').classList.add('on');
+};
+document.getElementById('tEmpty').onclick=()=>{
+  const b=document.body;
+  b.dataset.state=b.dataset.state==='empty'?'':'empty';
+  document.getElementById('tEmpty').classList.toggle('on',b.dataset.state==='empty');
+  document.querySelectorAll('.tab')[0].click();
+};
+
+// ================= EVENTO EN CURSO =================
+// Un evento con ended_at = null es un estado de primera clase.
+// Como máximo uno por tipo, y siempre visible con su salida al lado.
+let abierto=null, tic=null;
+const LC={sleep:{cls:'lc-sleep',ic:'#i-moon',k:'Durmiendo',fin:'Se ha despertado'},
+          feed :{cls:'lc-feed', ic:'#i-drop',k:'Toma en curso',fin:'Terminar'}};
+
+function abrirEvento(k,etiqueta){
+  if(abierto)return toast('Ya hay un '+LC[abierto.k].k.toLowerCase()+' sin cerrar');
+  abierto={k,t0:Date.now(),etiqueta:etiqueta||''};
+  document.body.dataset.open=k;   // el resto del dashboard reacciona
+  pintaLive();pintaHoy();
+  clearInterval(tic);tic=setInterval(pintaLive,1000);
+}
+function cerrarEvento(){
+  if(!abierto)return;
+  const min=Math.max(1,Math.round((Date.now()-abierto.t0)/60000));
+  const k=abierto.k;
+  abierto=null;clearInterval(tic);tic=null;
+  document.body.dataset.open='';
+  pintaLive();pintaHoy();
+  toast((k==='sleep'?'Sueño':'Toma')+' guardado · '+span(min));
+}
+function pintaLive(){
+  const slot=document.getElementById('liveSlot');
+  if(!abierto){slot.innerHTML='';return}
+  const c=LC[abierto.k];
+  const s=Math.floor((Date.now()-abierto.t0)/1000);
+  const reloj=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  slot.innerHTML=`
+    <div class="live-card ${c.cls}">
+      <svg class="lc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-linecap="round" stroke-linejoin="round"><use href="${c.ic}"/></svg>
+      <div class="lc-txt">
+        <div class="lc-k">${c.k}${abierto.etiqueta?' · '+abierto.etiqueta:''}</div>
+        <div class="lc-t">${reloj}</div>
+      </div>
+      <button class="lc-btn" onclick="cerrarEvento()">${c.fin}</button>
+    </div>`;
+}
+
+// --- Alternancia de pechos: más útil que el minuto exacto ---
+function siguienteLado(){
+  const ult=today.filter(e=>e.k==='feed'&&e.lado&&e.lado!=='Ambos').pop();
+  if(!ult)return null;
+  return ult.lado==='Izquierdo'?'Derecho':'Izquierdo';
+}
+
+// --- Reparación de temporizador olvidado ---
+document.getElementById('tRepair').onclick=()=>{
+  document.querySelectorAll('.tab')[0].click();
+  showRepair();
+};
+function showRepair(){
+  document.getElementById('repairSlot').innerHTML=`
+    <div class="repair">
+      <h3>Una siesta de 6 h 40 min</h3>
+      <p>Empezó a las 07:52 y sigue abierta. Este dato no entra en las estadísticas hasta que lo resuelvas.</p>
+      <div class="repair-btns">
+        <button class="acc" onclick="openWake()">Se despertó antes</button>
+        <button onclick="resolve('Siesta confirmada')">Sigue durmiendo</button>
+      </div>
+      <button class="repair-idk" onclick="resolve('Marcado como no fiable · excluido de estadísticas')">No lo sé</button>
+    </div>`;
+}
+function resolve(msg){
+  document.getElementById('repairSlot').innerHTML='';
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600);
+}
+// Hoja específica de despertar. Cerrarla sin guardar NO resuelve nada.
+function openWake(){
+  curK=null;
+  document.getElementById('shTitle').textContent='¿A qué hora se despertó?';
+  document.getElementById('shSub').textContent='Entre las 07:52 y ahora. Si no lo recuerdas, puedes marcarlo como no fiable.';
+  document.getElementById('whenLabel').textContent='Hora aproximada';
+  LO=7*60+52;HI=NOW;
+  const w=document.getElementById('whenChips');
+  w.innerHTML=['09:00','10:00','11:00','Otra'].map((o,i)=>
+    `<button class="chip t${i===1?' on':''}"><b>${o}</b><span>${
+      o==='Otra'?'elegir':'siesta de '+span(parseInt(o)*60-LO)}</span></button>`).join('');
+  w.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    w.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+    const v=c.querySelector('b').textContent;
+    if(v==='Otra'){pick=600;openTuner('wake')}
+    else{pick=parseInt(v)*60;document.getElementById('tunerSlot').innerHTML=''}
+  });
+  pick=600;
+  document.getElementById('tunerSlot').innerHTML='';
+  document.getElementById('detailField').style.display='none';
+  document.getElementById('extraFields').innerHTML='';
+  const cta=document.getElementById('cta');
+  cta.className='cta sleep';cta.textContent='Guardar despertar';
+  cta.onclick=()=>{closeSheet();resolve('Siesta corregida · '+span(pick-LO)+' · estimado');};
+  document.getElementById('delBtn').style.display='none';
+  const lk=document.getElementById('sheetLink');
+  lk.textContent='No lo sé — marcar como no fiable';
+  lk.onclick=()=>{closeSheet();resolve('Marcado como no fiable · excluido de estadísticas');};
+  document.getElementById('veil').classList.add('on');
+  document.getElementById('sheet').classList.add('on');
+}
+// --- Tiempo ---
+const NOW=14*60+32;
+const r5=m=>Math.round(m/5)*5;   // los tiempos reconstruidos van redondeados
+let LO=NOW-720, HI=NOW, pick=NOW, tMode='abs', exact=true;
+
+function buildWhen(offsets,onOther){
+  const w=document.getElementById('whenChips');
+  w.innerHTML=offsets.map((o,i)=>{
+    if(o==='otra')return `<button class="chip t"><b>Otra</b><span>elegir</span></button>`;
+    const t=o===0?NOW:r5(NOW-o);
+    return `<button class="chip t${i===0?' on':''}"><b>${hhmm(t)}</b><span>${o===0?'ahora':'hace '+o+' min'}</span></button>`;
+  }).join('');
+  w.querySelectorAll('.chip').forEach((c,i)=>c.onclick=()=>{
+    w.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+    if(offsets[i]==='otra'){pick=r5(NOW-30);exact=false;openTuner(onOther)}
+    else{const o=offsets[i];pick=(o===0?NOW:r5(NOW-o));exact=(o===0);
+      document.getElementById('tunerSlot').innerHTML=''}
+  });
+  pick=NOW;exact=true;
+}
+
+function openTuner(mode){
+  tMode=mode;
+  document.getElementById('tunerSlot').innerHTML=`
+    <div class="field"><div class="field-label">Ajustar</div>
+      <div class="tuner">
+        <button class="step" onclick="bump(-15)">−15</button>
+        <button class="step" onclick="bump(-5)">−5</button>
+        <div class="tuner-val" id="tv"></div>
+        <button class="step" onclick="bump(5)">+5</button>
+        <button class="step" onclick="bump(15)">+15</button>
+      </div>
+      <div class="tuner-dur" id="td"></div>
+    </div>`;
+  paint();
+}
+function bump(n){pick=Math.min(HI,Math.max(LO,r5(pick)+n));paint()}
+function paint(){
+  const tv=document.getElementById('tv'),td=document.getElementById('td');
+  if(tv)tv.textContent=hhmm(pick);
+  if(td)td.innerHTML= tMode==='wake'
+    ? `Siesta de <b>${span(pick-LO)}</b> · se guardará como estimado`
+    : `Hace <b>${span(NOW-pick)}</b> · se guardará como estimado`;
+}
+</script>
+</body>
+</html>

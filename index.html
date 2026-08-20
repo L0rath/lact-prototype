@@ -7,41 +7,47 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ritmo">
-<meta name="theme-color" content="#0E1116">
+<meta name="theme-color" content="#121316">
 <title>Prototipo — Seguimiento infantil</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --sleep:#7B8CFF;
-  --feed:#F2A65A;
-  --diaper:#3FBFA0;
-  --danger:#F2646A;
+  /* Tonos desaturados: llenan superficies grandes y a plena saturación cansan */
+  --sleep:#8590E0;
+  --feed:#E0A06E;
+  --diaper:#6FB39D;
+  --danger:#D9787E;   /* solo para acciones destructivas */
   --r:14px;
   --pad:20px;
 }
-/* NOCHE (por defecto) */
+/* NOCHE (por defecto)
+   Grises cálidos, no azulados: la luz enriquecida en azul es la que más
+   suprime la melatonina, y esto se usa de madrugada junto a un bebé. */
 body[data-theme="night"]{
-  --bg:#0E1116; --surface:#171C24; --raised:#212934; --line:#2A323E;
-  --text:#E8EDF5; --muted:#8A96A8; --dim:#5C6879;
+  --bg:#121316; --surface:#1A1B1F; --raised:#232529; --line:#2E3035;
+  --text:#E4E1DB; --muted:#9A968E; --dim:#7D7973;
 }
-/* DÍA */
+/* DÍA — fondo papel, no blanco clínico */
 body[data-theme="day"]{
-  --bg:#F5F7FA; --surface:#FFFFFF; --raised:#EDF1F6; --line:#DDE3EB;
-  --text:#131A24; --muted:#65718ategy; --muted:#657182; --dim:#96A1B0;
+  --bg:#F7F5F2; --surface:#FFFFFF; --raised:#EFEDE9; --line:#E2DFDA;
+  --text:#22201D; --muted:#6E6A64; --dim:#9C978F;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
+/* La serif necesita figuras tabulares explícitas: sin esto el cronómetro baila */
+.hero-big,.tuner-val,.lc-t,.metric-val,.stat b,.ev-time,.dsum,.dmy input,#bandRead{
+  font-feature-settings:'tnum' 1,'lnum' 1;font-variant-numeric:tabular-nums lining-nums}
 body{
-  background:#05070A; font-family:'Inter Tight',system-ui,sans-serif;
+  background:#05070A; font-family:'Manrope',system-ui,-apple-system,sans-serif;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:24px 12px; gap:16px; color:#E8EDF5;
 }
 .chrome{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
 .chrome button{
   background:#1B222C;color:#B9C4D2;border:1px solid #2C3440;border-radius:99px;
-  padding:7px 14px;font:500 12px 'Inter Tight';cursor:pointer;letter-spacing:.02em;
+  padding:7px 14px;font:500 12px 'Manrope';cursor:pointer;letter-spacing:.02em;
 }
 .chrome button.on{background:#E8EDF5;color:#0E1116;border-color:#E8EDF5}
 
@@ -59,7 +65,7 @@ body{
 .screen.on{display:block}
 .screen::-webkit-scrollbar{display:none}
 
-h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
+h1{font:800 25px 'Manrope';letter-spacing:-.02em;margin-bottom:2px}
 .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
 
 /* --- Banda de ritmo (elemento firma) --- */
@@ -84,7 +90,7 @@ h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
 /* --- Héroe --- */
 .hero{margin-bottom:20px}
 .hero-eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-.hero-big{font:800 48px/1 'Bricolage Grotesque';letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.hero-big{font:800 46px/1 'Manrope';letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .hero-big small{font-size:24px;font-weight:600;letter-spacing:-.01em}
 .hero-note{color:var(--muted);font-size:13.5px;margin-top:8px}
 .dot{display:inline-block;width:7px;height:7px;border-radius:99px;margin-right:6px;vertical-align:1px}
@@ -94,7 +100,7 @@ h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
   background:repeating-linear-gradient(45deg,transparent 0 4px,var(--bg) 4px 5px);opacity:.5}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:22px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px 12px}
-.stat b{font:700 21px 'Bricolage Grotesque';display:block;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat b{font:700 21px 'Manrope';display:block;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .stat span{font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 
 /* --- Acciones --- */
@@ -131,7 +137,7 @@ h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
 .filters{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
 .filters::-webkit-scrollbar{display:none}
 .filt{flex:none;background:var(--surface);border:1px solid var(--line);color:var(--muted);
-  border-radius:99px;padding:7px 13px;font:500 12.5px 'Inter Tight';cursor:pointer}
+  border-radius:99px;padding:7px 13px;font:500 12.5px 'Manrope';cursor:pointer}
 .filt.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 .dayc{border-bottom:1px solid var(--line);padding:6px 0 14px}
 .dayh{display:block;width:100%;background:none;border:0;color:var(--text);
@@ -150,7 +156,7 @@ h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
 .dayev{display:none;margin-top:6px}
 .dayc.open .dayev{display:block}
 .addday{width:100%;background:none;border:1px dashed var(--line);color:var(--muted);
-  border-radius:9px;padding:10px;font:500 12.5px 'Inter Tight';cursor:pointer;margin-top:8px}
+  border-radius:9px;padding:10px;font:500 12.5px 'Manrope';cursor:pointer;margin-top:8px}
 .ev.hide{display:none}
 .blk.dim{opacity:.13}
 .ev{display:flex;gap:13px;padding:11px 0;align-items:flex-start;width:100%;
@@ -174,18 +180,18 @@ h1{font:800 26px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:2px}
   padding:16px;margin-bottom:11px}
 .metric-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px}
 .metric-name{font-size:13px;color:var(--muted)}
-.metric-val{font:700 25px 'Bricolage Grotesque';letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.metric-val{font:800 24px 'Manrope';letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .spark{display:flex;align-items:flex-end;gap:4px;height:44px}
 .spark i{flex:1;border-radius:3px 3px 0 0;opacity:.85}
 .seg{display:flex;gap:6px;margin-bottom:18px}
 .seg button{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--muted);
-  border-radius:9px;padding:8px;font:500 12.5px 'Inter Tight';cursor:pointer}
+  border-radius:9px;padding:8px;font:500 12.5px 'Manrope';cursor:pointer}
 .seg button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 
 /* --- Tabs --- */
 .tabs{display:flex;border-top:1px solid var(--line);background:var(--surface);flex:none;
   padding:8px 0 22px}
-.tab{flex:1;background:none;border:0;color:var(--dim);font:500 10.5px 'Inter Tight';
+.tab{flex:1;background:none;border:0;color:var(--dim);font:500 10.5px 'Manrope';
   cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px}
 .tab .ti{width:21px;height:21px;stroke-width:1.75}
 .tab.on .ti{stroke-width:2.25}
@@ -201,21 +207,21 @@ svg.ic,svg.ti{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin
 .onb-dots i{height:3px;flex:1;border-radius:2px;background:var(--line)}
 .onb-dots i.on{background:var(--text)}
 .onb-body{flex:1}
-.onb-q{font:800 26px/1.2 'Bricolage Grotesque';letter-spacing:-.025em;margin-bottom:8px}
+.onb-q{font:800 25px/1.25 'Manrope';letter-spacing:-.022em;margin-bottom:8px}
 .onb-h{font-size:13.5px;color:var(--muted);margin-bottom:26px;line-height:1.45}
 .onb-in{width:100%;background:none;border:0;border-bottom:2px solid var(--line);
-  color:var(--text);font:600 24px 'Bricolage Grotesque';padding:8px 0 12px;margin-bottom:28px}
+  color:var(--text);font:500 23px 'Manrope';padding:8px 0 12px;margin-bottom:28px}
 .onb-in:focus{outline:none;border-color:var(--sleep)}
 .onb-in::placeholder{color:var(--dim);font-weight:400}
 .onb-foot{display:flex;gap:10px;align-items:center}
-.onb-back{background:none;border:0;color:var(--muted);font:500 13.5px 'Inter Tight';
+.onb-back{background:none;border:0;color:var(--muted);font:500 13.5px 'Manrope';
   padding:16px 8px;cursor:pointer}
 .onb-skip{display:block;width:100%;background:none;border:0;color:var(--dim);
-  font:500 12.5px 'Inter Tight';padding:14px;cursor:pointer;margin-top:4px}
+  font:500 12.5px 'Manrope';padding:14px;cursor:pointer;margin-top:4px}
 .dmy{display:flex;align-items:center;gap:8px}
 .dmy input{flex:1;width:0;background:var(--raised);border:1px solid var(--line);
   border-radius:10px;padding:14px 8px;color:var(--text);text-align:center;
-  font:700 19px 'Bricolage Grotesque';font-variant-numeric:tabular-nums}
+  font:700 19px 'Manrope';font-variant-numeric:tabular-nums}
 .dmy input:focus{outline:none;border-color:var(--sleep)}
 .dmy input::placeholder{color:var(--dim);font-weight:400;font-size:15px}
 .dmy span{color:var(--dim);font-size:17px}
@@ -229,8 +235,8 @@ svg.ic,svg.ti{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin
 
 /* --- Estado vacío --- */
 .empty{display:none;padding:6px 0 26px}
-.empty p{font:700 19px 'Bricolage Grotesque';letter-spacing:-.02em}
-.empty .empty-sub{font:400 13.5px 'Inter Tight';color:var(--muted);
+.empty p{font:700 19px 'Manrope';letter-spacing:-.02em}
+.empty .empty-sub{font:400 13.5px 'Manrope';color:var(--muted);
   margin-top:7px;line-height:1.45}
 body[data-state="empty"] .rhythm,
 body[data-state="empty"] .hero,
@@ -242,10 +248,10 @@ body[data-state="empty"] .empty{display:block}
 .live-card .lc-ic{width:20px;height:20px;flex:none;stroke-width:1.9}
 .live-card .lc-txt{flex:1;line-height:1.25}
 .live-card .lc-k{font-size:11px;letter-spacing:.09em;text-transform:uppercase;opacity:.7}
-.live-card .lc-t{font:800 20px 'Bricolage Grotesque';letter-spacing:-.02em;
+.live-card .lc-t{font:700 20px 'Manrope';letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;margin-top:2px}
 .live-card .lc-btn{flex:none;border:0;border-radius:9px;padding:11px 15px;
-  font:700 13px 'Inter Tight';cursor:pointer}
+  font:700 13px 'Manrope';cursor:pointer}
 .lc-sleep{background:color-mix(in srgb,var(--sleep) 13%,var(--surface));border-color:var(--sleep);color:var(--text)}
 .lc-sleep .lc-ic{color:var(--sleep)}
 .lc-sleep .lc-btn{background:var(--sleep);color:#0B0F17}
@@ -260,7 +266,7 @@ body[data-open="feed"] .act.tint-feed{display:none}
 /* En estado vacío no hay "hace X": no hay nada registrado */
 body[data-state="empty"] .hint{display:none}
 .cta-alt{width:100%;background:none;border:1px solid var(--line);color:var(--text);
-  border-radius:12px;padding:14px;font:600 14px 'Inter Tight';cursor:pointer;margin-top:9px}
+  border-radius:12px;padding:14px;font:600 14px 'Manrope';cursor:pointer;margin-top:9px}
 .veil{position:absolute;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;
   transition:opacity .22s;z-index:5}
 .veil.on{opacity:1;pointer-events:auto}
@@ -274,58 +280,61 @@ body[data-state="empty"] .hint{display:none}
 .sheet-head{touch-action:none;cursor:grab;padding-bottom:2px}
 .sheet-head:active{cursor:grabbing}
 .grab{width:36px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 16px}
-.sheet h2{font:700 20px 'Bricolage Grotesque';letter-spacing:-.02em;margin-bottom:3px}
+.sheet h2{font:700 20px 'Manrope';letter-spacing:-.02em;margin-bottom:3px}
 .sheet .sh-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px}
 .field{margin-bottom:16px}
 .field-label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 .chips{display:flex;gap:7px;flex-wrap:wrap}
 .chip{background:var(--raised);border:1px solid var(--line);color:var(--text);border-radius:9px;
-  padding:10px 14px;font:500 13.5px 'Inter Tight';cursor:pointer;flex:1;text-align:center;
+  padding:10px 14px;font:500 13.5px 'Manrope';cursor:pointer;flex:1;text-align:center;
   font-variant-numeric:tabular-nums}
 .chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 .cta{width:100%;background:var(--feed);color:#1A1206;border:0;border-radius:12px;
-  padding:16px;font:700 15.5px 'Inter Tight';cursor:pointer;margin-top:4px}
+  padding:16px;font:700 15.5px 'Manrope';cursor:pointer;margin-top:4px}
 .cta.sleep{background:var(--sleep);color:#0B0F17}
-.link{width:100%;background:none;border:0;color:var(--muted);font:500 12.5px 'Inter Tight';
+.link{width:100%;background:none;border:0;color:var(--muted);font:500 12.5px 'Manrope';
   padding:13px;cursor:pointer}
 
 /* --- Aviso de temporizador olvidado --- */
+/* No es una urgencia: es una pregunta sobre un dato de sueño.
+   Usa el color del sueño, no el rojo de alarma. */
 .repair{
-  background:var(--surface);border:1px solid var(--danger);border-radius:var(--r);
-  padding:15px;margin-bottom:20px
+  background:color-mix(in srgb,var(--sleep) 9%,var(--surface));
+  border:1px solid color-mix(in srgb,var(--sleep) 40%,var(--line));
+  border-radius:var(--r);padding:15px;margin-bottom:20px
 }
 .repair h3{font-size:14.5px;font-weight:700;margin-bottom:5px}
 .repair p{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:13px}
 .repair-btns{display:flex;gap:8px}
-.repair-btns button{flex:1;border-radius:9px;padding:11px;font:600 12.5px 'Inter Tight';cursor:pointer;
+.repair-btns button{flex:1;border-radius:9px;padding:11px;font:600 12.5px 'Manrope';cursor:pointer;
   background:var(--raised);border:1px solid var(--line);color:var(--text)}
-.repair-btns button.acc{background:var(--danger);border-color:var(--danger);color:#1A0608}
+.repair-btns button.acc{background:var(--sleep);border-color:var(--sleep);color:#0B0F17}
 .sheet.expanded{max-height:88%;overflow-y:auto}
 .sheet.expanded::-webkit-scrollbar{display:none}
 .note-input{width:100%;background:var(--raised);border:1px solid var(--line);border-radius:10px;
-  padding:12px;color:var(--text);font:400 13.5px 'Inter Tight';resize:none;min-height:62px}
+  padding:12px;color:var(--text);font:400 13.5px 'Manrope';resize:none;min-height:62px}
 .note-input::placeholder{color:var(--dim)}
 .chips.wrap .chip{flex:0 0 auto;min-width:78px}
 .counter{display:flex;align-items:center;gap:10px}
 .counter .step{flex:0 0 54px}
-.counter b{font:800 24px 'Bricolage Grotesque';flex:1;text-align:center;font-variant-numeric:tabular-nums}
+.counter b{font:800 23px 'Manrope';flex:1;text-align:center;font-variant-numeric:tabular-nums}
 .chip.t{display:flex;flex-direction:column;gap:2px;padding:9px 4px;line-height:1.1}
-.chip.t b{font:700 14.5px 'Inter Tight';font-variant-numeric:tabular-nums}
+.chip.t b{font:700 14.5px 'Manrope';font-variant-numeric:tabular-nums}
 .chip.t span{font-size:9px;opacity:.6;white-space:nowrap;letter-spacing:.01em}
 .tuner{display:flex;align-items:center;gap:7px}
 .step{background:var(--raised);border:1px solid var(--line);color:var(--text);border-radius:9px;
-  padding:12px 0;flex:1;font:600 13px 'Inter Tight';cursor:pointer;font-variant-numeric:tabular-nums}
+  padding:12px 0;flex:1;font:600 13px 'Manrope';cursor:pointer;font-variant-numeric:tabular-nums}
 .step:active{background:var(--text);color:var(--bg)}
-.tuner-val{font:800 26px 'Bricolage Grotesque';letter-spacing:-.03em;flex:1.4;text-align:center;
+.tuner-val{font:800 25px 'Manrope';letter-spacing:-.03em;flex:1.4;text-align:center;
   font-variant-numeric:tabular-nums}
 .tuner-dur{font-size:12.5px;color:var(--muted);margin-top:11px;text-align:center}
 .tuner-dur b{color:var(--text);font-weight:700}
 .repair-idk{width:100%;background:none;border:0;color:var(--muted);
-  font:500 12.5px 'Inter Tight';padding:12px 0 2px;cursor:pointer;text-decoration:underline;
+  font:500 12.5px 'Manrope';padding:12px 0 2px;cursor:pointer;text-decoration:underline;
   text-underline-offset:3px}
 .toast{
   position:absolute;left:20px;right:20px;bottom:96px;background:var(--text);color:var(--bg);
-  border-radius:11px;padding:13px 16px;font:600 13.5px 'Inter Tight';z-index:8;
+  border-radius:11px;padding:13px 16px;font:600 13.5px 'Manrope';z-index:8;
   opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none;text-align:center
 }
 .toast.on{opacity:1;transform:translateY(0)}

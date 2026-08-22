@@ -986,8 +986,22 @@ function expand(k){
   lk.onclick=()=>{box.innerHTML='';document.getElementById('sheet').classList.remove('expanded');
     lk.textContent='Añadir detalles';lk.onclick=()=>expand(k)};
 }
-let lastMl=150;   // se recuerda entre tomas: casi siempre es la misma
+let lastMl=150;   // último valor usado
 let ml=150;
+
+// Las cantidades ofrecidas salen de lo que esta familia da de verdad,
+// no de una tabla por edad ni del último valor suelto: una toma corta
+// puntual no debe descolocar los botones de mañana.
+function cantidadesFrecuentes(){
+  const hist=dias.flatMap(d=>d.ev)
+    .filter(e=>e.k==='feed'&&e.ml)
+    .map(e=>Math.round(e.ml/5)*5);
+  if(hist.length<3)return[90,120,150];
+  const f={};hist.forEach(v=>f[v]=(f[v]||0)+1);
+  return Object.keys(f).map(Number)
+    .sort((a,b)=>f[b]-f[a]||Math.abs(a-lastMl)-Math.abs(b-lastMl))
+    .slice(0,3).sort((a,b)=>a-b);
+}
 
 let metodoActual='Pecho';
 // El onboarding no preselecciona: elimina el campo cuando la familia es exclusiva.
@@ -1002,19 +1016,19 @@ function syncFeed(){
   const bottle=metodoActual==='Biberón';
   const s=document.getElementById('condSlot');
   if(bottle){
-    ml=lastMl;
-    const opts=[90,120,150,180];
+    const opts=cantidadesFrecuentes();
+    ml=opts.includes(lastMl)?lastMl:opts[opts.length-1];
     s.innerHTML=`<div class="field">
       <div class="field-label">Cantidad tomada</div>
       <div class="chips" id="mlChips">${opts.map(v=>
-        `<button class="chip${v===lastMl?' on':''}">${v}</button>`).join('')}
+        `<button class="chip${v===ml?' on':''}">${v}</button>`).join('')}
         <button class="chip">Otra</button></div>
       <div id="mlTuner"></div></div>`;
     const box=document.getElementById('mlChips');
     box.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
       box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
-      if(c.textContent==='Otra'){openMl()}
-      else{ml=parseInt(c.textContent);document.getElementById('mlTuner').innerHTML=''}
+      if(c.textContent==='Otra'){openMl()}          // arranca en el valor actual
+      else{ml=parseInt(c.textContent);lastMl=ml;document.getElementById('mlTuner').innerHTML=''}
     });
   }else{
     s.innerHTML=`<div class="field"><div class="field-label">Lado</div>
@@ -1024,15 +1038,19 @@ function syncFeed(){
   }
 }
 function openMl(){
+  // Arranca en el valor seleccionado, no en uno fijo: llegar a 85 desde 150
+  // costaba seis toques.
   document.getElementById('mlTuner').innerHTML=`
     <div class="tuner" style="margin-top:9px">
       <button class="step" onclick="bumpMl(-10)">−10</button>
+      <button class="step" onclick="bumpMl(-5)">−5</button>
       <div class="tuner-val" id="mlVal">${ml}<span style="font-size:14px"> ml</span></div>
+      <button class="step" onclick="bumpMl(5)">+5</button>
       <button class="step" onclick="bumpMl(10)">+10</button>
     </div>`;
 }
 function bumpMl(n){
-  ml=Math.max(10,Math.min(400,ml+n));
+  ml=Math.max(10,Math.min(400,ml+n));lastMl=ml;
   document.getElementById('mlVal').innerHTML=ml+'<span style="font-size:14px"> ml</span>';
 }
 
@@ -1099,12 +1117,13 @@ function openSheet(k,ev){
   if(k==='sleep'){
     // El sueño no se puede estimar al empezar: el cronómetro es el camino principal
     cta.textContent='Se ha dormido';
-    cta.onclick=()=>{closeSheet();abrirEvento('sleep')};
+    cta.onclick=()=>{closeSheet();abrirEvento('sleep','',NOW-pick,!exact)};
     tm.style.display='none';
   }else if(conDuracion){
     tm.textContent='Iniciar cronómetro';
     tm.onclick=()=>{closeSheet();
-      abrirEvento('feed',document.querySelector('#condSlot .chip.on')?.textContent||'')};
+      abrirEvento('feed',document.querySelector('#condSlot .chip.on')?.textContent||'',
+        NOW-pick,!exact)};
   }
   // Alternancia de pechos: lo que de verdad se consulta
   if(k==='feed'&&!ev&&metodoActual!=='Biberón'){
@@ -1368,9 +1387,11 @@ let abierto=null, tic=null;
 const LC={sleep:{cls:'lc-sleep',ic:'#i-moon',k:'Durmiendo',fin:'Se ha despertado'},
           feed :{cls:'lc-feed', ic:'#i-drop',k:'Toma en curso',fin:'Terminar'}};
 
-function abrirEvento(k,etiqueta){
+function abrirEvento(k,etiqueta,atrasoMin,estimado){
   if(abierto)return toast('Ya hay un '+LC[abierto.k].k.toLowerCase()+' sin cerrar');
-  abierto={k,t0:Date.now(),etiqueta:etiqueta||''};
+  const atraso=Math.max(0,atrasoMin||0);
+  abierto={k,t0:Date.now()-atraso*60000,desde:AHORA_M-atraso,
+           etiqueta:etiqueta||'',est:!!estimado};
   document.body.dataset.open=k;   // el resto del dashboard reacciona
   pintaLive();pintaHoy();
   clearInterval(tic);tic=setInterval(pintaLive,1000);
@@ -1390,12 +1411,13 @@ function pintaLive(){
   const c=LC[abierto.k];
   const s=Math.floor((Date.now()-abierto.t0)/1000);
   const reloj=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  const desde=abierto.desde!==undefined?' · desde las '+hhmm(abierto.desde):'';
   slot.innerHTML=`
     <div class="live-card ${c.cls}">
       <svg class="lc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-linecap="round" stroke-linejoin="round"><use href="${c.ic}"/></svg>
       <div class="lc-txt">
-        <div class="lc-k">${c.k}${abierto.etiqueta?' · '+abierto.etiqueta:''}</div>
+        <div class="lc-k">${c.k}${abierto.etiqueta?' · '+abierto.etiqueta:''}${desde}${abierto.est?' · estimado':''}</div>
         <div class="lc-t">${reloj}</div>
       </div>
       <button class="lc-btn" onclick="cerrarEvento()">${c.fin}</button>
